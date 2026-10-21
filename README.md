@@ -69,6 +69,15 @@ Mechanical's `vercel.json` rewrites `/engineering/…` to this project, so Engin
 menu and top bar hidden – `?embed=1`), like the Store. Every address of the page is relative. `/menu.json` gives the pages of
 the person signed in; Ctrl K in Mechanical searches Engineering's pages, works and people (`window.rclModule`).
 
+## A Preview = the staging (TEST) copy (21-10-2026, as Mechanical, the Portal and the Store)
+* On a Vercel **Preview** (`VERCEL_ENV=preview`), `lib/preview.js` asks the database first: it must have the row
+  `app_settings.THIS_IS_A_TEST_DATABASE = 'yes'`. Only the staging database has it (the live Engineering database has no
+  `app_settings` table at all).
+* A database without it is refused with 503, "This is a Preview …". Nothing is read or written. The page shows an orange TEST band.
+* Live (`production`) asks nothing.
+* For a Preview of Engineering: its Preview settings in Vercel point to the staging database, where `sql/eng_step1.sql` is run
+  once too (after Mechanical's `staging/rcl_staging_all.sql`, which puts the mark in).
+
 ## Tests (local test rig only – never the live databases)
 ```
 timeout 300 node --test test/unit.test.js     # no database (ENG_KML=<the 18B KML> also reads the real drawing)

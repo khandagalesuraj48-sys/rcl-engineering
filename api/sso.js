@@ -6,6 +6,7 @@ const portal = require('../lib/portal');
 const { db } = require('../lib/db');
 const ses = require('../lib/session');
 const { activity } = require('../lib/activity');
+const { isPreview } = require('../lib/preview');
 
 module.exports = handler(async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'POST only.' });
@@ -23,5 +24,5 @@ module.exports = handler(async (req, res) => {
   await db('POST', 'eng_people?on_conflict=site,email', [{ site: c.site, email: c.email, name: c.name, role: c.role, first_seen: (had && had.first_seen) || now, last_seen: now }], 'resolution=merge-duplicates,return=minimal');
   const cookie = await ses.create(req, c);
   await activity(c.site, c.email, 'Sign-in', c.site, { role: c.role });
-  send(res, 200, { ok: true, user: { email: c.email, name: c.name, role: c.role }, site: c.site, siteName: c.siteName, mods: c.mods, sites: c.sites, portal: portal.url() }, { 'Set-Cookie': cookie });
+  send(res, 200, { ok: true, preview: isPreview() || undefined, user: { email: c.email, name: c.name, role: c.role }, site: c.site, siteName: c.siteName, mods: c.mods, sites: c.sites, portal: portal.url() }, { 'Set-Cookie': cookie });
 });

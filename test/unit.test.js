@@ -138,3 +138,32 @@ test('settings files; no secret in any file', () => {
   files.filter(f => /\.(js|json|html|sql|md)$/.test(f) && !/test[\\/]/.test(f)).forEach(f => { const t = fs.readFileSync(f, 'utf8');
     assert.ok(!/sb_secret_[A-Za-z0-9]{10,}|eyJhbGciOi[A-Za-z0-9_-]{20,}|service_role\s*[:=]\s*['"][^'"]{20,}/.test(t), 'no key in ' + path.relative(ROOT, f)); });
 });
+
+test('a Preview works only with the database marked as the TEST one (as Mechanical, the Portal and the Store); live asks nothing', async () => {
+  const P = require('../lib/preview'), { db } = require('../lib/db');
+  const env = { VERCEL_ENV: process.env.VERCEL_ENV, SUPABASE_URL: process.env.SUPABASE_URL, SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY }, f0 = global.fetch;
+  const asked = []; let marked = false;
+  global.fetch = async (url) => { asked.push(String(url));
+    if (/app_settings\?id=eq\.THIS_IS_A_TEST_DATABASE/.test(url)) return marked ? new Response(JSON.stringify([{ value: 'yes' }]), { status: 200 }) : new Response('{"code":"PGRST205","message":"Could not find the table"}', { status: 404 });
+    return new Response(JSON.stringify([{ id: 1 }]), { status: 200 }); };
+  try {
+    process.env.SUPABASE_URL = 'http://db.test'; process.env.SUPABASE_SECRET_KEY = 'k';
+    // live (production): nothing is asked first
+    process.env.VERCEL_ENV = 'production'; P._forget(); asked.length = 0;
+    assert.deepStrictEqual(await db('GET', 'eng_roads?select=id'), [{ id: 1 }]); assert.strictEqual(asked.length, 1);
+    // a Preview pointed at a database WITHOUT the mark (the live one): refused, nothing read
+    process.env.VERCEL_ENV = 'preview'; P._forget(); asked.length = 0;
+    await assert.rejects(db('GET', 'eng_roads?select=id'), e => e.status === 503 && /This is a Preview/.test(e.message));
+    assert.ok(asked.every(u => /THIS_IS_A_TEST_DATABASE/.test(u)), 'only the mark was asked');
+    await assert.rejects(db('POST', 'eng_days', [{ x: 1 }]), e => e.status === 503);      // remembered: refused at once
+    assert.ok(!asked.some(u => /eng_days|eng_roads/.test(u)), 'nothing read or written');
+    // the staging database (marked): works
+    marked = true; P._forget(); asked.length = 0;
+    assert.deepStrictEqual(await db('GET', 'eng_roads?select=id'), [{ id: 1 }]);
+    assert.ok(asked.length === 2 && /THIS_IS_A_TEST_DATABASE/.test(asked[0]));
+    // the page shows the TEST band when the server says preview
+    const html = fs.readFileSync(path.join(ROOT, 'public', 'index.html'), 'utf8');
+    assert.ok(/if \(j\.preview \|\| \/\^This is a Preview\/\.test\(String\(j\.error \|\| ''\)\)\) previewBand\(\);/.test(html) && /id = 'rcl_preview_band'/.test(html));
+    ['me.js', 'sso.js'].forEach(f => assert.ok(/preview: isPreview\(\) \|\| undefined/.test(fs.readFileSync(path.join(ROOT, 'api', f), 'utf8')), f));
+  } finally { global.fetch = f0; Object.keys(env).forEach(k => { if (env[k] === undefined) delete process.env[k]; else process.env[k] = env[k]; }); P._forget(); }
+});
