@@ -1,0 +1,11 @@
+{
+  "name": "rcl-engineering",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RCL ERP – Engineering module: the road and its works (set up by the Super Admin, period by period), each person's daily plan and report, the dashboard, strip chart, reports and performance. Signs in through the Portal; one database for every site (each row carries its site).",
+  "scripts": {
+    "dev": "node dev.js",
+    "test": "node --test test/unit.test.js"
+  },
+  "engines": { "node": ">=20" }
+}

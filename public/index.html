@@ -1,0 +1,1257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Engineering – RCL ERP</title>
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* RCL ERP – ENGINEERING. The same family as Mechanical and the Store: a dark menu on the left (Change site at its top, the
+     pages, the other modules of this site), a white top bar, white panels, the amber main button. The views follow the site's
+     daily report (dashboard, strip chart, all reports, who reported). */
+  :root { --steel: #22303A; --steel-2: #2E3F4B; --hivis: #F2B705; --page: #EDF0F2; --panel: #fff; --line: #D3D9DE; --ink: #1C252C; --muted: #5E6B75;
+    --bad: #B3261E; --good: #2E7D32; --warn: #B45309; --more: #6D28D9; --blue: #1D55E2; --road: #3A434B; --verge: #E5DCC8;
+    --ui: 'IBM Plex Sans', 'Segoe UI', Roboto, Arial, sans-serif; --display: 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.45 var(--ui); }
+  body { overflow-x: hidden; }
+  [hidden] { display: none !important; }
+  button, input, select, textarea { font: inherit; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; font-weight: 600; }
+  .btn.primary { background: var(--hivis); border-color: #D99A00; color: #1C1300; }
+  .btn.small { min-height: 34px; padding: 5px 12px; font-size: 14px; }
+  .btn.bad { color: var(--bad); border-color: #E7B4B0; }
+  .btn.on { background: var(--steel); color: #fff; border-color: var(--steel); }
+  .btn:disabled { opacity: .6; cursor: default; }
+  .btn:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, button:focus-visible, textarea:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  input, select, textarea { min-height: 40px; padding: 7px 10px; border: 1px solid #B8C0CC; border-radius: 8px; background: #fff; color: var(--ink); width: 100%; }
+  textarea { min-height: 64px; resize: vertical; }
+  input[type=checkbox], input[type=radio] { width: auto; min-height: 0; }
+  .link { background: none; border: 0; padding: 0; color: var(--blue); cursor: pointer; font-weight: 600; }
+  .link.del { color: var(--bad); }
+  .muted { color: var(--muted); }
+  /* ---- the dark menu ---- */
+  .app { display: flex; min-height: 100vh; }
+  .side { position: sticky; top: 0; height: 100vh; flex: 0 0 236px; width: 236px; background: var(--steel); color: #C9D3D9; display: flex; flex-direction: column; z-index: 20; }
+  .brandbox { padding: 12px 12px 10px; border-bottom: 1px solid rgba(255,255,255,.08); display: flex; flex-direction: column; gap: 6px; }
+  .brandtile { background: #fff; border-radius: 8px; padding: 8px 10px; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .rlogo { position: relative; overflow: hidden; display: block; aspect-ratio: 3.724; width: 100%; }
+  .rlogo img { position: absolute; max-width: none; width: 209.2%; left: -54.8%; top: -227.8%; height: auto; }
+  .rlogo .fb { display: none; } .rlogo.noimg img { display: none; }
+  .rlogo.noimg .fb { display: grid; place-content: center; position: absolute; inset: 0; font: 700 26px var(--display); color: #B3261E; }
+  .brandsub { font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: #93A3AE; text-align: center; }
+  .brandsub small { display: block; letter-spacing: .06em; font-weight: 500; color: #6E808C; text-transform: none; font-size: 11px; }
+  .sitebox { padding: 10px 8px 2px; }
+  .site-chg { appearance: none; width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(242,183,5,.45); background: rgba(242,183,5,.10); color: #fff; cursor: pointer; text-align: left; }
+  .site-chg:hover { background: rgba(242,183,5,.2); }
+  .site-chg svg { flex: 0 0 18px; width: 18px; height: 18px; color: var(--hivis); }
+  .site-chg span { min-width: 0; flex: 1; line-height: 1.2; }
+  .site-chg small { display: block; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #F2C94C; }
+  .site-chg b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .side nav { flex: 1; overflow-y: auto; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px; }
+  .grp { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.07); }
+  .grp:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+  .grphead { appearance: none; border: 0; background: transparent; color: #E6ECEF; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 12px; border-radius: 6px; font: 600 13px var(--ui); letter-spacing: .04em; text-align: left; }
+  .grphead svg { flex: 0 0 18px; width: 18px; height: 18px; }
+  .grphead .chev { margin-left: auto; width: 16px; height: 16px; flex-basis: 16px; transition: transform .2s; opacity: .7; }
+  .grp:not(.open) .chev { transform: rotate(-90deg); }
+  .grp:not(.open) .items { display: none; }
+  .grphead:hover { background: var(--steel-2); }
+  .items { padding-left: 8px; }
+  .items .navbtn { height: 36px; font-size: 14px; }
+  .items .note { color: #93A3AE; font-size: 12.5px; padding: 6px 12px; }
+  .items .note.cap { color: #F2B705; font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 8px 12px 2px; }
+  .navbtn { appearance: none; border: 0; background: transparent; color: #C9D3D9; cursor: pointer; width: 100%; display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px; border-radius: 6px; text-align: left; font-weight: 500; }
+  .navbtn svg { flex: 0 0 18px; width: 18px; height: 18px; }
+  .navbtn:hover { background: var(--steel-2); color: #fff; }
+  .navbtn[aria-current="page"] { background: rgba(242,183,5,.14); color: #fff; box-shadow: inset 3px 0 0 var(--hivis); }
+  .navbtn[aria-current="page"] svg { color: var(--hivis); }
+  /* ---- the page ---- */
+  .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .topbar { position: sticky; top: 0; z-index: 10; background: #fff; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 12px; padding: 10px 18px; }
+  .topbar h1 { margin: 0; font: 700 24px var(--display); letter-spacing: .01em; }
+  .topbar .crumb { font-size: 12px; color: var(--muted); }
+  .topbar .who { margin-left: auto; text-align: right; line-height: 1.2; }
+  .topbar .who b { display: block; } .topbar .who small { color: var(--muted); }
+  .menu-btn { display: none; }
+  main { padding: 18px; max-width: 1400px; width: 100%; }
+  .panel { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
+  .panel h2 { margin: 0 0 4px; font: 700 22px var(--display); letter-spacing: .01em; }
+  .panel h3 { margin: 12px 0 6px; font-size: 16px; }
+  .bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px; margin: 12px 0; }
+  .bar .field { margin: 0; min-width: 150px; flex: 0 1 200px; }
+  .bar .grow { flex: 1 1 260px; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .field label, .lbl { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 14px; }
+  .grid .wide { grid-column: span 2; }
+  .tw { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+  th { background: #F6F8FB; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  td.n, th.n { text-align: right; }
+  td.nm { white-space: normal; min-width: 180px; font-weight: 600; }
+  td.wrap { white-space: normal; min-width: 200px; }
+  td small { display: block; color: var(--muted); font-weight: 400; }
+  tr.off td { opacity: .55; }
+  tr.ver td { background: #FAFBFC; font-size: 13.5px; }
+  .acts { display: flex; gap: 12px; flex-wrap: wrap; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #E8F5E9; color: var(--good); }
+  .tag.off { background: #EEF0F2; color: var(--muted); } .tag.warn { background: #FFF3CD; color: #8A6100; } .tag.bad { background: #FDECEA; color: var(--bad); } .tag.more { background: #EDE7F6; color: var(--more); } .tag.blue { background: #E8EEFC; color: var(--blue); }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; background: #fff; margin: 2px 4px 2px 0; }
+  .sidebadge { display: inline-block; border: 1px solid #B8C0CC; border-radius: 6px; padding: 0 6px; font-size: 12px; font-weight: 700; color: #3B4650; margin: 0 2px; }
+  .empty { text-align: center; color: var(--muted); padding: 22px; }
+  .errbox { background: #FDECEA; color: var(--bad); border-radius: 8px; padding: 10px 12px; font-size: 14px; margin: 10px 0; }
+  .remind { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #FFF4D6; border: 1px solid #F2C94C; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
+  .remind b { font-size: 16px; } .remind .grow { flex: 1 1 240px; }
+  /* the date bar (as in the site's daily report) */
+  .datebar { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; margin: 10px 0 14px; }
+  .dnav { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 12px; background: #fff; overflow: hidden; }
+  .dnav button { appearance: none; border: 0; background: #fff; width: 46px; font-size: 20px; cursor: pointer; color: var(--ink); }
+  .dnav button:disabled { color: #C5CCD2; cursor: default; }
+  .dnav .dd { position: relative; min-width: 120px; padding: 6px 12px; text-align: center; border-left: 1px solid var(--line); border-right: 1px solid var(--line); line-height: 1.2; cursor: pointer; }
+  .dnav .dd b { display: block; font-size: 16px; } .dnav .dd small { color: var(--muted); }
+  .dnav .dd input { position: absolute; inset: 0; opacity: 0; cursor: pointer; min-height: 0; }
+  .bigdate { font: 700 34px/1.1 var(--display); margin: 2px 0 0; }
+  /* tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin: 6px 0 16px; }
+  .tile { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; position: relative; }
+  .tile small { display: block; color: var(--muted); font-weight: 600; font-size: 13px; }
+  .tile b { font: 700 36px var(--display); } .tile b + i { font-style: normal; color: var(--muted); margin-left: 4px; }
+  .tile span { display: block; color: var(--muted); font-size: 13px; }
+  .tile svg.ring { position: absolute; right: 14px; top: 14px; }
+  /* the work chips at the top of the dashboard */
+  .wchips { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .wchip { border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 8px 14px; min-width: 170px; text-align: left; cursor: pointer; }
+  .wchip b { display: block; } .wchip small { color: var(--muted); }
+  .wchip.miss { border-color: #E7A19B; } .wchip.miss small { color: var(--bad); }
+  .attn { border: 1px solid #E8A15C; color: var(--warn); background: #fff; border-radius: 12px; padding: 9px 16px; font-weight: 700; cursor: pointer; }
+  .attnlist { margin: 10px 0 0; padding: 0; list-style: none; }
+  .attnlist li { padding: 6px 0; border-bottom: 1px dashed var(--line); }
+  /* a work's card (planned against achieved) */
+  .wcard { background: #fff; border: 1px solid var(--line); border-top: 5px solid #8D99A3; border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+  .wcard .wc-h { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px 4px; }
+  .wcard .wc-h h3 { margin: 0; font: 700 22px var(--display); }
+  .wcard .st { margin-left: auto; font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .wcard .wc-b { padding: 4px 16px 10px; }
+  .wcard .big { font: 700 34px var(--display); } .wcard .pct { float: right; font: 700 30px var(--display); }
+  .wcard .row { border-top: 1px solid var(--line); padding: 9px 16px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .outside { color: var(--warn); font-weight: 600; }
+  .st-As { color: var(--good); } .st-Partly, .st-Reports { color: var(--warn); } .st-More { color: var(--more); } .st-Not, .st-No { color: var(--bad); } .st-Outside { color: var(--warn); } .st-Nothing { color: var(--muted); }
+  /* the strip pictures */
+  svg.strip { width: 100%; height: auto; display: block; }
+  .stripwrap { overflow-x: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13.5px; align-items: center; }
+  .legend i { display: inline-block; width: 18px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; border: 1px solid rgba(0,0,0,.15); }
+  .legend i.ol { background: none; border: 2px solid #111; } .legend i.prog { background: none; border: 2px dashed #E0A800; }
+  .lbar { height: 10px; border-radius: 6px; background: #EEF1F4; overflow: hidden; border: 1px solid #DDE2E7; }
+  .lbar > span { display: block; height: 100%; border-radius: 6px; }
+  .lrow { display: grid; grid-template-columns: minmax(150px, 1.2fr) 2fr minmax(150px, 1fr); gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid #EEF0F2; }
+  .lrow .r { text-align: right; } .lrow .r b { display: block; font-size: 16px; } .lrow .r small { color: var(--muted); }
+  .slider { width: 100%; accent-color: var(--steel); min-height: 0; padding: 0; border: 0; }
+  /* all reports grid */
+  .rgrid td { vertical-align: top; }
+  .rcell { appearance: none; text-align: left; border: 1px solid var(--line); border-radius: 10px; background: #fff; padding: 6px 10px; cursor: pointer; min-width: 120px; line-height: 1.3; }
+  .rcell b { color: var(--good); } .rcell.late b { color: var(--warn); }
+  .rmiss { color: var(--bad); font-weight: 700; }
+  /* who reported */
+  .pcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-bottom: 16px; }
+  .pcard { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; grid-template-columns: 48px 1fr; gap: 6px 12px; }
+  .pcard .ini { font: 700 22px var(--display); color: #9AA5AE; }
+  .pcard h3 { margin: 0; font-size: 17px; } .pcard p { margin: 2px 0 6px; color: var(--muted); font-size: 14px; }
+  .mtx td, .mtx th { text-align: center; padding: 6px 6px; font-size: 12px; } .mtx td:first-child, .mtx th:first-child { text-align: left; font-size: 14px; font-weight: 600; }
+  .mtx .dot { color: var(--bad); font-weight: 700; }
+  /* forms of a day: plan lines and report lines */
+  .line { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; background: #FBFCFD; }
+  .line .lh { font-weight: 600; margin-bottom: 6px; }
+  .line .lh small { font-weight: 400; color: var(--muted); }
+  .lgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px 10px; align-items: end; }
+  .lgrid .wide { grid-column: span 2; }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
+  .seg label { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #B8C0CC; border-radius: 999px; padding: 6px 12px; cursor: pointer; background: #fff; font-weight: 600; font-size: 14px; }
+  .seg label:has(input:checked) { background: var(--steel); color: #fff; border-color: var(--steel); }
+  .leftinfo { font-weight: 700; color: var(--warn); }
+  .okinfo { font-weight: 700; color: var(--good); }
+  .sent { background: #E8F5E9; border-radius: 10px; padding: 8px 12px; color: var(--good); font-weight: 600; margin: 6px 0 10px; }
+  .readline { padding: 8px 0; border-bottom: 1px dashed var(--line); }
+  .readline:last-child { border-bottom: 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 1100px) { .two { grid-template-columns: 1fr; } }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 14px; width: fit-content; max-width: 100%; }
+  .tabs button { appearance: none; border: 0; background: none; padding: 8px 14px; border-radius: 9px; cursor: pointer; font-weight: 600; color: var(--muted); }
+  .tabs button[aria-selected="true"] { background: var(--page); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .rows .r { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .rows .r.l3 { grid-template-columns: 2fr 1fr auto; }
+  .checks { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+  .checks label { display: inline-flex; gap: 6px; align-items: center; font-weight: 500; }
+  /* dialog, toast, the start */
+  .dlg-back { position: fixed; inset: 0; background: rgba(20,30,38,.45); display: grid; place-items: center; z-index: 50; padding: 16px; }
+  .dlg { background: #fff; border-radius: 12px; max-width: 640px; width: 100%; padding: 18px 20px; box-shadow: 0 18px 40px rgba(0,0,0,.25); max-height: 90vh; overflow: auto; }
+  .dlg.wide { max-width: 980px; }
+  .dlg h3 { margin: 0 0 8px; font-size: 18px; }
+  .dlg .mr { color: var(--muted); font-size: 14px; }
+  .dlg .btns { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+  .dlg pre { white-space: pre-wrap; background: #F6F8FB; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: 14px/1.45 var(--ui); }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #1F2B34; color: #fff; padding: 10px 18px; border-radius: 10px; max-width: calc(100% - 32px); z-index: 60; }
+  #toast.bad { background: var(--bad); }
+  .start { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  .start .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 24px; max-width: 460px; width: 100%; text-align: center; }
+  @media (max-width: 860px) {
+    .side { position: fixed; left: 0; top: 0; transform: translateX(-100%); transition: transform .2s; box-shadow: 0 0 30px rgba(0,0,0,.3); }
+    .side.open { transform: none; }
+    .menu-btn { display: inline-flex; }
+    .topbar { padding: 8px 12px; } .topbar h1 { font-size: 21px; } .topbar .who small { display: none; }
+    main { padding: 12px; }
+    .grid .wide, .lgrid .wide { grid-column: auto; }
+    .bar .field { flex: 1 1 100%; }
+    .bigdate { font-size: 28px; }
+    .lrow { grid-template-columns: 1fr; gap: 4px; } .lrow .r { text-align: left; }
+    .rows .r, .rows .r.l3 { grid-template-columns: 1fr 1fr; }
+  }
+  @media print { .side, .topbar, .noprint, .datebar, #remind { display: none !important; } main { padding: 0; max-width: none; } .panel { break-inside: avoid; border: 0; } }
+  /* INSIDE ANOTHER MODULE'S SCREEN (Mechanical shows this page in its middle part – its own menu, top bar and Logout are there) */
+  html.embed, html.embed body { background: transparent; }
+  html.embed .side, html.embed .topbar { display: none !important; }
+  html.embed .app { min-height: 0; }
+  html.embed main { max-width: none; padding: 2px 2px 24px; }
+  html.embed .start { min-height: 50vh; }
+</style>
+</head>
+<body>
+<section class="start" id="v_start"><div class="card"><h2 style="margin:0 0 6px">Engineering</h2><p id="st_msg">Signing in…</p><p class="mr muted" id="st_mr"></p>
+  <p id="st_go" hidden><a class="btn primary" id="st_link" href="#">Open the Portal</a></p></div></section>
+
+<div class="app" id="v_app" hidden>
+  <aside class="side" id="side">
+    <div class="brandbox">
+      <div class="brandtile"><span class="rlogo"><img src="https://i.ibb.co/CpSfBqXX/RCL-LOGO-PDF.png" alt="Rachana Construction Limited" onerror="this.parentNode.classList.add('noimg')"><span class="fb">Rachana</span></span></div>
+      <div class="brandsub">Engineering<small>by One Click Solution</small></div>
+    </div>
+    <div class="sitebox"><button type="button" class="site-chg" id="site_chg" title="Change site – open another of your sites" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
+      <span><small>Change site</small><b id="site_name"></b></span></button></div>
+    <nav aria-label="Modules" id="nav">
+      <div class="grp open" id="grp_eng">
+        <button type="button" class="grphead" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20 10 4h4l6 16"/><path d="M12 8v2M12 13v2M12 18v1"/></svg>Engineering<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="items" id="eng_pages"></div>
+      </div>
+      <div id="mods"></div>
+    </nav>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button type="button" class="btn small menu-btn" id="menu_btn" aria-label="Open menu">☰</button>
+      <div><div class="crumb">Engineering /</div><h1 id="pg_title">My work</h1></div>
+      <div class="who"><b id="u_name"></b><small id="u_role"></small></div>
+      <button type="button" class="btn small" id="u_logout">Logout</button>
+    </header>
+    <main>
+      <!-- the hourly reminder: the report of yesterday is not in -->
+      <div class="remind" id="remind" hidden><div class="grow"><b>Submit report</b><div id="remind_t"></div><div class="muted" id="remind_mr"></div></div>
+        <button type="button" class="btn primary" id="remind_go">Report now</button><button type="button" class="btn small" id="remind_nt" hidden>Turn on reminders</button></div>
+
+      <!-- MY WORK: the person's plan and his report of it -->
+      <div id="pg_mywork" hidden>
+        <div class="bar noprint" style="margin-top:0">
+          <div class="field" id="mw_who_w" hidden><label for="mw_who">Person</label><select id="mw_who"></select></div>
+        </div>
+        <div class="datebar" id="mw_dates"></div>
+        <div id="mw_body"></div>
+      </div>
+
+      <!-- DASHBOARD of a report date: the work of the day before, and that day's program -->
+      <div id="pg_dashboard" hidden>
+        <div class="bigdate" id="db_date"></div><div class="muted" id="db_sub"></div>
+        <div class="datebar" id="db_dates"></div>
+        <div class="wchips" id="db_chips"></div>
+        <div id="db_attn"></div>
+        <section class="tiles" id="db_tiles"></section>
+        <section class="panel"><h2>Where work happened, and where it is today</h2><p class="muted" style="margin:0 0 10px">colour = done on the work day · dashed gold = today's program</p><div id="db_over"></div></section>
+        <h2 style="font:700 26px var(--display);margin:18px 0 10px" id="db_cards_h">Planned against achieved</h2>
+        <div id="db_cards"></div>
+      </div>
+
+      <!-- STRIP CHART -->
+      <div id="pg_strip" hidden>
+        <div class="bigdate" id="sc_title">Strip chart</div><div class="muted" id="sc_sub"></div>
+        <div class="datebar" id="sc_dates"></div>
+        <section class="panel"><b>Progress as on</b> <span id="sc_ason"></span>
+          <input type="range" class="slider" id="sc_slider" min="0" max="0" value="0" aria-label="Progress as on">
+          <div style="display:flex;justify-content:space-between" class="muted"><span id="sc_s0"></span><span id="sc_s1"></span></div></section>
+        <section class="panel"><h2 id="sc_h">Colour = highest layer finished</h2><p class="muted" style="margin:0 0 10px">black outline = done on the work day · dashed gold = today's program</p>
+          <div id="sc_chart"></div><div class="legend" id="sc_legend"></div></section>
+        <section class="panel"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline"><h2>Progress by layer</h2><span class="muted" style="margin-left:auto">of the length of its sides</span></div><div id="sc_layers"></div></section>
+      </div>
+
+      <!-- ALL REPORTS: when each work's report came in and who sent it -->
+      <div id="pg_allreports" hidden>
+        <div class="bigdate">All reports</div><div class="muted">when each work's report came in and who sent it · open one to see the report as text</div>
+        <div class="bar noprint"><div class="field"><label for="ar_from">From (report date)</label><input type="date" id="ar_from"></div><div class="field"><label for="ar_to">To</label><input type="date" id="ar_to"></div><button type="button" class="btn" id="ar_go">Show</button></div>
+        <section class="panel" style="padding:0"><div class="tw" style="border:0"><table class="rgrid"><thead id="ar_head"></thead><tbody id="ar_rows"></tbody></table></div></section>
+        <p class="muted">✎ = corrected after it was sent</p>
+      </div>
+
+      <!-- REPORTS: a day, a week, 15 days, a month -->
+      <div id="pg_reports" hidden>
+        <div class="bigdate" id="rp_title">Reports</div><div class="muted" id="rp_sub"></div>
+        <div class="bar noprint">
+          <div class="tabs" id="rp_kind" style="margin:0"><button type="button" data-k="day" aria-selected="true">Daily</button><button type="button" data-k="week" aria-selected="false">Weekly</button><button type="button" data-k="15" aria-selected="false">15 days</button><button type="button" data-k="month" aria-selected="false">Monthly</button></div>
+          <div class="field"><label for="rp_day">Work day (the last day)</label><input type="date" id="rp_day"></div>
+          <button type="button" class="btn" id="rp_print">Print</button>
+        </div>
+        <section class="tiles" id="rp_tiles"></section>
+        <section class="panel"><h2>Work by work</h2><div class="tw" style="margin-top:8px"><table><thead><tr><th>Work</th><th class="n">Planned</th><th class="n">Done</th><th class="n">%</th><th class="n">Outside the plan</th><th>By</th></tr></thead><tbody id="rp_rows"></tbody></table></div></section>
+        <section class="panel"><h2>Reasons for the work left</h2><div id="rp_reasons"></div></section>
+        <section class="panel"><h2>Day by day (done)</h2><div class="tw" style="margin-top:8px"><table><thead id="rp_dhead"></thead><tbody id="rp_days"></tbody></table></div></section>
+      </div>
+
+      <!-- PERFORMANCE: who reported, how much of his plan he did -->
+      <div id="pg_perf" hidden>
+        <div class="bigdate">Who reported</div><div class="muted" id="pf_sub">people move between works – every report keeps the name of whoever sent it</div>
+        <div class="bar noprint"><div class="field"><label for="pf_month">Month</label><input type="month" id="pf_month"></div></div>
+        <div class="pcards" id="pf_cards"></div>
+        <section class="panel"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline"><h2>Who sent each work's report, day by day</h2><span class="muted" style="margin-left:auto">initials = sender · red dot = missing</span></div><div class="tw" style="margin-top:8px"><table class="mtx"><thead id="pf_mhead"></thead><tbody id="pf_mrows"></tbody></table></div></section>
+      </div>
+
+      <!-- SET-UP: the Super Admin fills everything (period by period, Active / Inactive) -->
+      <div id="pg_setup" hidden>
+        <div class="tabs" id="su_tabs"><button type="button" data-t="road" aria-selected="true">Road (KML)</button><button type="button" data-t="side" aria-selected="false">Sides &amp; widths</button><button type="button" data-t="work" aria-selected="false">Works &amp; layers</button><button type="button" data-t="mix" aria-selected="false">Mix design</button><button type="button" data-t="design" aria-selected="false">Design</button><button type="button" data-t="people" aria-selected="false">People &amp; works</button></div>
+        <div id="su_road">
+          <section class="panel"><h2>The road</h2><div id="rd_now" class="muted"></div>
+            <div class="bar"><button type="button" class="btn primary" id="rd_pick">Choose the KML file</button><input type="file" id="rd_file" accept=".kml,application/vnd.google-earth.kml+xml" hidden></div>
+            <div id="rd_new" hidden><div class="grid"><div class="field wide"><label for="rd_name">Name of the road</label><input id="rd_name" maxlength="80"></div></div><div id="rd_info"></div>
+              <div class="bar"><button type="button" class="btn primary" id="rd_save">Save the road</button><button type="button" class="btn" id="rd_cancel">Cancel</button></div></div>
+          </section>
+        </div>
+        <div id="su_master" hidden>
+          <section class="panel"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><h2 id="ms_h"></h2><button type="button" class="btn primary" id="ms_new" style="margin-left:auto">+ Add</button></div>
+            <p class="muted" id="ms_p" style="margin:4px 0 10px"></p>
+            <div class="tw"><table><thead id="ms_head"></thead><tbody id="ms_rows"></tbody></table></div></section>
+          <section class="panel" id="ms_form" hidden><h2 id="mf_h"></h2><div id="mf_body"></div>
+            <div class="grid" style="margin-top:10px"><div class="field"><label for="mf_from">Valid from *</label><input type="date" id="mf_from"></div><div class="field"><label for="mf_to">Valid to (empty = still running)</label><input type="date" id="mf_to"></div></div>
+            <div class="bar"><button type="button" class="btn primary" id="mf_save">Save</button><button type="button" class="btn" id="mf_cancel">Cancel</button></div></section>
+        </div>
+        <div id="su_people" hidden>
+          <section class="panel"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><h2>People and their works</h2><button type="button" class="btn primary" id="pp_new" style="margin-left:auto">+ Add person</button></div>
+            <p class="muted" style="margin:4px 0 10px">Everyone with Engineering on this site in the Portal comes here at his first sign-in. A person can be given more than one work; only the works given to him are in his plan.</p>
+            <div class="tw"><table><thead><tr><th>Name</th><th>Role</th><th>Works given</th><th>Last seen</th><th></th></tr></thead><tbody id="pp_rows"></tbody></table></div></section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<datalist id="dl_reasons"></datalist>
+<datalist id="dl_worknames"><option value="BT Cutting"><option value="Embankment"><option value="Subgrade"><option value="GSB"><option value="DLC"><option value="PQC"><option value="Drain"><option value="Culvert"><option value="Shoulder"><option value="Kerb"></datalist>
+<div class="dlg-back" id="dlg" hidden><div class="dlg" id="dlg_box" role="dialog" aria-modal="true" aria-labelledby="dlg_t"><h3 id="dlg_t"></h3><div id="dlg_b"></div><div class="btns" id="dlg_btns"></div></div></div>
+<div id="toast" role="status" hidden></div>
+
+<script src="kml.js"></script>
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s === undefined || s === null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const S = { me: null, page: '', today: '', masters: [], people: [], assign: [], reasons: [], sides: [], road: null, remind: null,
+    mw: { email: '', day: '', data: null, editRep: false }, db: { day: '' }, sc: { day: '' }, rp: { kind: 'day', day: '' }, su: { tab: 'road' } };
+  function toast(t, bad) { const e = $('toast'); e.textContent = t; e.className = bad ? 'bad' : ''; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { e.hidden = true; }, bad ? 7000 : 3500); }
+  // every address of this page is RELATIVE to where it is (it is also served under the main address: <main>/engineering/)
+  const BASE = location.pathname.endsWith('/') ? location.pathname : location.pathname + '/';
+  const EMBED = /[?&]embed=1(&|$)/.test(location.search) && (() => { try { return window.parent !== window && !!window.parent.document; } catch (e) { return false; } })();
+  if (EMBED) document.documentElement.classList.add('embed');
+  async function api(path, body) {
+    const r = await fetch(BASE + path, body === undefined ? { credentials: 'same-origin' } : { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-RCL': '1' }, body: JSON.stringify(body) });
+    let j = {}; try { j = await r.json(); } catch (e) { j = { error: 'Engineering did not answer properly (' + r.status + ').' }; }
+    if (j.preview || /^This is a Preview/.test(String(j.error || ''))) previewBand();
+    if (!r.ok || j.error) { const e = new Error(j.error || ('Error ' + r.status)); e.status = r.status; e.code = j.code; e.data = j; throw e; }
+    return j;
+  }
+  // (21-10-2026) a Preview (a test copy on the staging database): a band on top, so nobody takes it for the live Engineering
+  function previewBand() {
+    if (document.getElementById('rcl_preview_band') || EMBED) return;      // inside Mechanical's screen: Mechanical shows it
+    const b = document.createElement('div'); b.id = 'rcl_preview_band'; b.textContent = 'TEST copy (Preview) – the staging database · nothing here is live';
+    b.style.cssText = 'display:block;height:22px;line-height:22px;padding:0 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;background:#F59E0B;color:#111;font:700 12px/22px system-ui,sans-serif;text-align:center';
+    document.body.insertBefore(b, document.body.firstChild);      // in the page's flow, above its top bar – it hides nothing
+  }
+  const eng = body => api('api/eng', body);
+  function ask(title, html, buttons, wide) {
+    return new Promise(res => {
+      $('dlg_t').textContent = title; $('dlg_b').innerHTML = html; $('dlg_box').className = 'dlg' + (wide ? ' wide' : '');
+      $('dlg_btns').innerHTML = buttons.map((b, i) => '<button type="button" class="btn' + (b.primary ? ' primary' : '') + (b.bad ? ' bad' : '') + '" data-i="' + i + '">' + esc(b.label) + '</button>').join('');
+      $('dlg').hidden = false;
+      const done = v => { $('dlg').hidden = true; $('dlg_btns').onclick = null; document.removeEventListener('keydown', key); res(v); };
+      const key = e => { if (e.key === 'Escape') done(null); };
+      document.addEventListener('keydown', key);
+      $('dlg_btns').onclick = e => { const b = e.target.closest('[data-i]'); if (b) done(buttons[Number(b.dataset.i)].value); };
+      setTimeout(() => { const f = $('dlg_btns').querySelector('.primary') || $('dlg_btns').firstElementChild; if (f) f.focus(); }, 30);
+    });
+  }
+
+  /* ---------------- dates, chainage, numbers ---------------- */
+  const addDays = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const WD = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dt = d => new Date(Date.parse(d + 'T00:00:00Z'));
+  const showDay = d => d ? dt(d).getUTCDate() + ' ' + MON[dt(d).getUTCMonth()] : '';
+  const wday = d => d ? WD[dt(d).getUTCDay()] : '';
+  const longDay = d => d ? wday(d) + ', ' + dt(d).getUTCDate() + ' ' + MONTH[dt(d).getUTCMonth()] + ' ' + dt(d).getUTCFullYear() : '';
+  const istNow = () => new Date(Date.now() + 330 * 60000);
+  const todayIST = () => istNow().toISOString().slice(0, 10);
+  const hm = ts => { if (!ts) return ''; const x = new Date(Date.parse(ts) + 330 * 60000); return String(x.getUTCHours()).padStart(2, '0') + ':' + String(x.getUTCMinutes()).padStart(2, '0'); };
+  const dayOf = ts => ts ? new Date(Date.parse(ts) + 330 * 60000).toISOString().slice(0, 10) : '';
+  const when = ts => ts ? (dayOf(ts) === S.today ? 'today ' : showDay(dayOf(ts)) + ' ') + hm(ts) : '';
+  function chain(v) {
+    if (v === null || v === undefined || v === '') return null;
+    if (typeof v === 'number') return v;
+    const s = String(v).trim().replace(/\s+/g, ''); if (!s) return null;
+    let m = /^(\d{1,4})\+(\d{1,3}(?:\.\d+)?)$/.exec(s); if (m) return Number(m[1]) * 1000 + Number(m[2]);
+    m = /^(\d+(?:\.\d+)?)km$/i.exec(s); if (m) return Math.round(Number(m[1]) * 1e6) / 1000;
+    return /^\d+(\.\d+)?$/.test(s) ? Number(s) : NaN;
+  }
+  function showCh(m) {
+    if (m === null || m === undefined || m === '' || !isFinite(m)) return '';
+    const km = Math.floor(m / 1000), r = Math.round((m - km * 1000) * 1000) / 1000, w = Math.floor(r), part = Math.round((r - w) * 1000) / 1000;
+    return km + '+' + String(w).padStart(3, '0') + (part ? String(part).slice(1) : '');
+  }
+  const fmt = (n, dp) => n === null || n === undefined || !isFinite(n) ? '–' : Number(n).toLocaleString('en-IN', { maximumFractionDigits: dp === undefined ? 1 : dp });
+  const pct = (done, planned) => planned > 0 ? Math.round(done / planned * 100) : (done > 0 ? 100 : 0);
+  const ini = n => String(n || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+
+  /* ---------------- what the Super Admin set (period by period) ---------------- */
+  function versionOn(kind, item, d) { let best = null; S.masters.forEach(r => { if (r.kind === kind && r.item === item && r.valid_from <= d && (!r.valid_to || r.valid_to >= d) && (!best || r.valid_from > best.valid_from)) best = r; }); return best; }
+  function itemsOn(kind, d, all) { const out = {}; [...new Set(S.masters.filter(r => r.kind === kind).map(r => r.item))].forEach(it => { const v = versionOn(kind, it, d); if (v && (all || v.active)) out[it] = v; }); return out; }
+  const workOn = (item, d) => versionOn('work', item, d) || versionOn('work', item, S.today) || S.masters.filter(r => r.kind === 'work' && r.item === item).slice(-1)[0] || null;
+  const workName = (item, d) => { const w = workOn(item, d); return w ? w.data.name : item; };
+  const layerName = (item, key, d) => { const w = workOn(item, d); const l = w && w.data.layers.find(x => x.key === key); return l ? l.name : ''; };
+  const unitOf = (item, d) => { const w = workOn(item, d); return w ? w.data.unit : 'm'; };
+  function sideNamesOn(d) {
+    const v = itemsOn('side', d), order = n => { const i = ['LHS', 'Median', 'RHS'].indexOf(n); return i < 0 ? 9 : i; };
+    const n = [...new Set(Object.keys(v).map(k => v[k].data.name))].sort((a, b) => order(a) - order(b) || a.localeCompare(b));
+    return n.length ? n : ['LHS', 'Median', 'RHS'];
+  }
+  function sidesFor(w, d) {
+    const L = (w && w.data.sides.length ? w.data.sides : sideNamesOn(d)).filter(x => x !== 'Both');
+    return L.indexOf('LHS') > -1 && L.indexOf('RHS') > -1 ? L.concat(['Both']) : L;
+  }
+  const sideLabel = s => s === 'Both' ? 'Both (LHS + RHS)' : s;
+  const isSuper = () => S.me && S.me.user.role === 'super';
+  const canView = () => S.me && (S.me.user.role === 'super' || S.me.user.role === 'admin');
+  // the colour of a work (and lighter for its lower layers) – the same everywhere
+  const PAL = ['#7E57C2', '#8D5A2B', '#6B7280', '#3F63D8', '#E07B12', '#00897B', '#C2185B', '#5D4037', '#AFB42B', '#0277BD', '#455A64', '#D84315'];
+  function workColour(item) {
+    const list = [...new Set(S.masters.filter(r => r.kind === 'work').sort((a, b) => (a.data.sort - b.data.sort) || a.item.localeCompare(b.item)).map(r => r.item))];
+    const i = list.indexOf(item); return PAL[(i < 0 ? 0 : i) % PAL.length];
+  }
+  function mix(hex, t) { const n = parseInt(hex.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, f = c => Math.round(c + (255 - c) * t); return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')'; }
+  function layerColour(id, layers) {
+    const L = layers.find(x => x.id === id); if (!L) return '#999';
+    const same = layers.filter(x => x.work === L.work), k = same.indexOf(L), base = workColour(L.work);
+    return same.length < 2 ? base : mix(base, 0.55 * (same.length - 1 - k) / (same.length - 1));
+  }
+
+  /* ---------------- SIGN-IN THROUGH THE PORTAL (as the Store) ---------------- */
+  let PORTAL = '';
+  const PAGES = { mywork: 'My work', dashboard: 'Dashboard', strip: 'Strip chart', allreports: 'All reports', reports: 'Reports', perf: 'Performance', setup: 'Set-up (Super Admin)' };
+  const WHO = { mywork: 'all', dashboard: 'view', strip: 'all', allreports: 'view', reports: 'view', perf: 'view', setup: 'super' };
+  const mayOpen = p => WHO[p] === 'all' || (WHO[p] === 'view' && canView()) || (WHO[p] === 'super' && isSuper());
+  const IC = {
+    mywork: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
+    dashboard: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
+    strip: '<rect x="3" y="5" width="18" height="5" rx="1"/><rect x="3" y="14" width="18" height="5" rx="1"/><path d="M9 5v5M15 14v5"/>',
+    allreports: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/>',
+    reports: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+    perf: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M17 11l2 2 4-4"/>',
+    setup: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>' };
+  const svgIc = k => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[k] + '</svg>';
+  const lastSite = () => { try { return localStorage.getItem('rcl_eng_site') || ''; } catch (e) { return ''; } };
+  const hashArg = k => { const m = new RegExp('[#&]' + k + '=([^&]*)').exec(location.hash || ''); return m ? decodeURIComponent(m[1]) : ''; };
+  function toPortal(path, auto) {
+    if (!PORTAL) { startMsg('Engineering is not linked to the Portal yet (PORTAL_URL in Vercel).', 'Engineering अजून Portal ला जोडलेले नाही.'); return; }
+    if (auto) {
+      let hops = []; try { hops = JSON.parse(sessionStorage.getItem('rcl_eng_hops') || '[]').filter(t => Date.now() - t < 120000); } catch (e) { hops = []; }
+      if (hops.length >= 3) { startMsg('The Portal could not sign you in here (several tries in a row). Open the Portal and choose Engineering again.', 'Portal मधून इथे sign in झाले नाही. Portal उघडा आणि Engineering पुन्हा निवडा.', true); return; }
+      hops.push(Date.now()); try { sessionStorage.setItem('rcl_eng_hops', JSON.stringify(hops)); } catch (e) { /* no guard without storage */ }
+    }
+    location.href = PORTAL + path;
+  }
+  const goSignIn = (site, page) => { site = site || lastSite(); toPortal(site ? '/api/go?module=engineering&site=' + encodeURIComponent(site) + (page ? '&page=' + encodeURIComponent(page) : '') : '/', true); };
+  function startMsg(en, mr, link) {
+    $('v_app').hidden = true; $('v_start').hidden = false; $('st_msg').textContent = en; $('st_mr').textContent = mr || '';
+    $('st_go').hidden = !(link && PORTAL); $('st_link').href = PORTAL ? PORTAL + '/' : '#'; if (EMBED) $('st_link').target = '_top';
+  }
+  async function embedStart() {
+    const site = hashArg('site').toUpperCase(), page = PAGES[hashArg('page')] ? hashArg('page') : '', who = hashArg('u').toLowerCase();
+    let me; try { me = await api('api/me'); } catch (e) { return startMsg(e.message, '', false); }
+    PORTAL = me.portal || '';
+    if (me.signedIn && (!site || site === me.site) && (!who || who === String(me.user.email).toLowerCase())) return show(me, page);
+    if (me.signedIn) { try { await api('api/logout', {}); } catch (e) { /* it ends anyway */ } }
+    return embedTicket(site || (me.signedIn ? me.site : ''), page, who);
+  }
+  async function embedTicket(site, page, who) {
+    if (!PORTAL || !site) return startMsg('Engineering could not be opened here.', 'Engineering इथे उघडता आले नाही.', !!PORTAL);
+    let j = {}, ok = false;
+    try { const r = await fetch(PORTAL + '/api/go?module=engineering&site=' + encodeURIComponent(site) + '&json=1', { credentials: 'same-origin', headers: { 'X-RCL': '1' } }); ok = r.ok; j = await r.json(); }
+    catch (e) { return startMsg('No connection – check the internet and open the page again.', 'Internet तपासा आणि पान पुन्हा उघडा.', false); }
+    if (!ok || !j.ticket) {
+      if (j.code === 'signin') return startMsg('Your sign-in on the Portal has ended – sign in again.', 'Portal चा login संपला आहे – पुन्हा sign in करा.', true);
+      if (j.code === 'noaccess') return startMsg('You do not have Engineering on this site – ask the Super Admin.', 'या site वर तुम्हाला Engineering दिलेले नाही – Super Admin ला विचारा.', false);
+      return startMsg(j.error || 'Engineering could not be opened here.', 'Engineering इथे उघडता आले नाही.', true);
+    }
+    let r; try { r = await api('api/sso', { ticket: j.ticket }); } catch (e) { return startMsg(e.message, 'Engineering उघडता आले नाही.', true); }
+    if (who && String(r.user.email).toLowerCase() !== who) { try { await api('api/logout', {}); } catch (e) {} return startMsg('The Portal is signed in as another person on this computer – sign out and sign in again.', 'या computer वर Portal मध्ये दुसरी व्यक्ती आहे – sign out करून पुन्हा sign in करा.', true); }
+    PORTAL = r.portal || PORTAL; show(r, page);
+  }
+  /* THE SIGN-IN IS KEPT FRESH (23-10-2026, his yes): an Engineering sign-in lasts 15 minutes. Every 10 minutes – and when the page
+   * comes back after a pause – the page asks the Portal for a fresh ticket and signs in again with it. Whom the Super Admin removed
+   * gets none: the sign-in ends and the page says so. A new role shows at once. No answer: tried again in 2 minutes (a sign-in that
+   * ended meanwhile is signed in again when the next action meets it, as before). */
+  const RENEW_MS = 10 * 60000; let renewAt = 0, renewT = 0, renewing = false;
+  function renewStart() { renewAt = Date.now(); clearInterval(renewT); renewT = setInterval(() => { if (Date.now() - renewAt >= RENEW_MS) renew(); }, 30000); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.me && renewT && Date.now() - renewAt >= RENEW_MS) renew(); });
+  async function renew() {
+    if (renewing || !S.me || !PORTAL) return; renewing = true;
+    const later = () => { renewAt = Date.now() - RENEW_MS + 2 * 60000; };
+    try {
+      let j = {}; const r = await fetch(PORTAL + '/api/go?module=engineering&site=' + encodeURIComponent(S.me.site) + '&json=1&renew=1', { credentials: 'same-origin', headers: { 'X-RCL': '1' } });
+      try { j = await r.json(); } catch (e) { j = {}; }
+      if (!r.ok || !j.ticket) {
+        if (j.code !== 'noaccess' && j.code !== 'signin') return later();
+        clearInterval(renewT); renewT = 0; S.me = null; try { await api('api/logout', {}); } catch (e) { /* it ends by itself in 15 minutes */ }
+        return j.code === 'noaccess' ? startMsg('You no longer have Engineering on this site – ask the Super Admin.', 'या site वर तुम्हाला आता Engineering दिलेले नाही – Super Admin ला विचारा.', false)
+          : startMsg('Your sign-in on the Portal has ended – sign in again.', 'Portal चा login संपला आहे – पुन्हा sign in करा.', true);
+      }
+      const x = await api('api/sso', { ticket: j.ticket, renew: 1 }); renewAt = Date.now();
+      if (!S.me) return;
+      if (String(x.user.email).toLowerCase() !== String(S.me.user.email).toLowerCase()) { location.reload(); return; }
+      if (x.user.role === S.me.user.role) S.me = Object.assign({}, S.me, x);
+      else show(x, S.page);      // (the Super Admin changed his role: the menu and the pages follow)
+    } catch (e) { later(); }
+    finally { renewing = false; }
+  }
+  async function start() {
+    if (EMBED) return embedStart();
+    const tk = hashArg('sso'), wantSite = hashArg('site').toUpperCase(), wantPage = PAGES[hashArg('page')] ? hashArg('page') : '';
+    if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+    if (tk) {
+      try { const r = await api('api/sso', { ticket: tk }); try { sessionStorage.removeItem('rcl_eng_hops'); } catch (e) {} PORTAL = r.portal; return show(r, wantPage); }
+      catch (e) {
+        try { PORTAL = (await api('api/me')).portal || ''; } catch (e2) { PORTAL = ''; }
+        if (e.code === 'ticket' && /ran out|already used/.test(e.message)) return goSignIn(wantSite, wantPage);
+        return startMsg(e.message, 'Engineering उघडता आले नाही. Portal मधून पुन्हा उघडा.', true);
+      }
+    }
+    let me; try { me = await api('api/me'); } catch (e) { return startMsg(e.message, '', false); }
+    PORTAL = me.portal || '';
+    if (!me.signedIn || (wantSite && wantSite !== me.site)) return goSignIn(wantSite, wantPage);
+    show(me, wantPage);
+  }
+  window.addEventListener('hashchange', () => {
+    const tk = hashArg('sso'), site = hashArg('site').toUpperCase(), page = hashArg('page');
+    if (tk || !S.me || (site && site !== S.me.site)) { start(); return; }
+    if (page) go(page);
+  });
+  const MOD_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>';
+  const PG_IC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>';
+  const CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+  async function show(me, page) {
+    // opened on its own while the person also has Mechanical at this same address: shown inside Mechanical's screen (once in 30 s)
+    const mech = !EMBED && (me.mods || []).find(x => x.key === 'mechanical' && x.url);
+    let same = false; try { same = !!mech && new URL(mech.url).origin === location.origin; } catch (e) { same = false; }
+    if (same) {
+      let last = 0; try { last = Number(sessionStorage.getItem('rcl_eng_inmech') || 0); } catch (e) { last = 0; }
+      if (Date.now() - last > 30000) {
+        try { sessionStorage.setItem('rcl_eng_inmech', String(Date.now())); } catch (e) { /* the 30 s rule needs storage */ }
+        location.replace(mech.url.replace(/\/+$/, '') + '/#site=' + encodeURIComponent(me.site) + '&page=engineering__' + (page || (me.user.role === 'user' ? 'mywork' : 'dashboard')));
+        return;
+      }
+    }
+    S.me = me; try { localStorage.setItem('rcl_eng_site', me.site); } catch (e) { /* this tab only */ }
+    renewStart();      // (the sign-in is kept fresh – see renew)
+    $('v_start').hidden = true; $('v_app').hidden = false;
+    $('site_name').textContent = me.siteName || me.site;
+    const ROLE = { super: 'Super Admin', admin: 'Engineering Admin', user: 'Engineering User' };
+    $('u_name').textContent = me.user.name; $('u_role').textContent = (ROLE[me.user.role] || '') + ' · ' + (me.siteName || me.site);
+    $('eng_pages').innerHTML = Object.keys(PAGES).filter(mayOpen).map(k => '<button type="button" class="navbtn" data-page="' + k + '">' + svgIc(k) + '<span>' + esc(PAGES[k]) + '</span></button>').join('');
+    const others = EMBED ? [] : (me.mods || []).filter(x => x.key !== 'engineering');
+    $('mods').innerHTML = others.map(x => '<div class="grp" data-mod="' + esc(x.key) + '"><button type="button" class="grphead" aria-expanded="false">' + MOD_IC + esc(x.name) + CHEV + '</button><div class="items"><div class="note">…</div></div></div>').join('');
+    others.forEach(modPages);
+    try { await loadInit(); } catch (e) { failed(e); return; }
+    go(page || (canView() ? 'dashboard' : 'mywork'));
+    remindLoop();
+  }
+  const modLink = (x, page) => {
+    const pg = page ? '&page=' + encodeURIComponent(page) : '';
+    return x.url ? x.url.replace(/\/+$/, '') + '/#site=' + encodeURIComponent(S.me.site) + pg : PORTAL + '/api/go?module=' + encodeURIComponent(x.key) + '&site=' + encodeURIComponent(S.me.site) + pg;
+  };
+  async function modPages(x) {
+    const box = document.querySelector('#mods .grp[data-mod="' + x.key + '"] .items'); if (!box) return;
+    let pages = [];
+    try { if (x.url) { const r = await fetch(x.url.replace(/\/+$/, '') + '/menu.json', { credentials: 'same-origin' }); if (r.ok) pages = ((await r.json()) || {}).pages || []; } } catch (e) { pages = []; }
+    let grp = '';
+    box.innerHTML = (pages.length ? pages : [{ key: '', name: 'Open ' + x.name }]).slice(0, 60).map(p => {
+      const cap = p.group && p.group !== grp ? '<div class="note cap">' + esc(p.group) + '</div>' : ''; if (p.group) grp = p.group;
+      const go = pages.length ? modLink(x, /^[a-z0-9_-]{1,40}$/i.test(String(p.key)) ? p.key : '') : modLink({ key: x.key }, '');
+      return cap + '<button type="button" class="navbtn" data-go="' + esc(go) + '">' + PG_IC + '<span>' + esc(String(p.name).slice(0, 60)) + '</span></button>';
+    }).join('');
+  }
+  $('nav').addEventListener('click', e => {
+    const h = e.target.closest('.grphead'); if (h) { const g = h.closest('.grp'), open = !g.classList.contains('open'); g.classList.toggle('open', open); h.setAttribute('aria-expanded', String(open)); return; }
+    const b = e.target.closest('[data-go]'); if (b) { location.href = b.dataset.go; return; }
+    const p = e.target.closest('[data-page]'); if (p) { go(p.dataset.page); if (window.innerWidth <= 860) $('side').classList.remove('open'); }
+  });
+  function go(page) {
+    if (!PAGES[page] || !mayOpen(page)) page = 'mywork';
+    S.page = page; $('pg_title').textContent = PAGES[page];
+    document.querySelectorAll('#eng_pages [data-page]').forEach(b => { if (b.dataset.page === page) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    Object.keys(PAGES).forEach(k => { $('pg_' + k).hidden = k !== page; });
+    try { history.replaceState(null, '', location.pathname + location.search + '#page=' + page); } catch (e) { /* the address stays */ }
+    drawRemind();
+    const seq = (go.seq = (go.seq || 0) + 1);
+    document.body.dataset.loaded = '';      // (set when the page has its data – the tests wait for it)
+    LOAD[page]().then(() => { if (seq === go.seq) document.body.dataset.loaded = page; }, failed);
+  }
+  function failed(e) {
+    if (e && e.status === 401 && e.code === 'session' && EMBED) { embedTicket(S.me && S.me.site, S.page, hashArg('u').toLowerCase()); return; }
+    if (e && e.status === 401 && e.code === 'session') { toast('Your sign-in ended – signing in again through the Portal…', true); setTimeout(() => goSignIn(S.me && S.me.site, S.page), 1200); return; }
+    if (e && e.code === 'changed') { toast(e.message, true); LOAD[S.page]().catch(() => {}); return; }
+    toast((e && e.message) || String(e), true);
+  }
+  $('site_chg').addEventListener('click', async () => {
+    const me = S.me; if (!me) return;
+    const list = (me.sites || []).length ? me.sites : [{ code: me.site, name: me.siteName }];
+    const v = await ask('Change site', '<p class="muted">Your sites with Engineering</p>', list.map(x => ({ label: x.name + (x.code === me.site ? ' – open now' : ''), value: x.code === me.site ? null : x.code, primary: x.code === me.site }))
+      .concat([{ label: 'All my modules (Portal)', value: '__portal' }, { label: 'Stay here', value: null }]));
+    if (v === '__portal') toPortal('/?menu=1', false); else if (v) toPortal('/api/go?module=engineering&site=' + encodeURIComponent(v) + '&page=' + encodeURIComponent(S.page || 'mywork'), false);
+  });
+  $('u_logout').addEventListener('click', async () => {
+    const v = await ask('Logout?', '<p>This signs you out of the Portal and every module.</p><p class="mr">यामुळे Portal आणि सर्व modules मधून sign out होईल.</p>', [{ label: 'Cancel', value: false }, { label: 'Logout', value: true, primary: true }]);
+    if (!v) return;
+    try { await api('api/logout', {}); } catch (e) { /* the cookie ends anyway */ }
+    try { localStorage.removeItem('rcl_eng_site'); } catch (e) {}
+    if (PORTAL) location.href = PORTAL + '/?signout=1'; else startMsg('Signed out.', 'Sign out झाले.', false);
+  });
+  $('menu_btn').addEventListener('click', () => $('side').classList.toggle('open'));
+  document.addEventListener('click', e => { if (window.innerWidth <= 860 && $('side').classList.contains('open') && !e.target.closest('#side') && !e.target.closest('#menu_btn')) $('side').classList.remove('open'); });
+
+  async function loadInit() {
+    const r = await eng({ action: 'init' });
+    S.today = r.today; S.masters = r.masters; S.people = r.people; S.assign = r.assign; S.reasons = r.reasons; S.sides = r.sides; S.road = r.road; S.remind = r.remind;
+    $('dl_reasons').innerHTML = S.reasons.map(t => '<option value="' + esc(t) + '">').join('');
+    LOADED.ok();
+  }
+
+  /* ---------------- THE HOURLY REMINDER: "Submit report" ----------------
+   * Everyone given a work whose report of yesterday is not in: from 9 in the morning to 8 in the evening, every hour – on this
+   * page (the bar at the top) and, when the person allowed it, as a notification of the browser. Asked again every 10 minutes. */
+  const RH = { from: 9, to: 20 };
+  function drawRemind() {
+    const r = S.remind, h = istNow().getUTCHours(), on = !!(r && r.due && h >= RH.from && h <= RH.to && S.me);
+    $('remind').hidden = !on; if (!on) return;
+    $('remind_t').textContent = 'The report of your work of ' + longDay(r.day) + ' is not in yet – send it now.';
+    $('remind_mr').textContent = 'काल (' + showDay(r.day) + ') च्या कामाचा report अजून आलेला नाही – आत्ता पाठवा.';
+    $('remind_nt').hidden = !('Notification' in window) || Notification.permission !== 'default';
+  }
+  function notifyHourly() {
+    const r = S.remind, h = istNow().getUTCHours();
+    if (!r || !r.due || h < RH.from || h > RH.to || !('Notification' in window) || Notification.permission !== 'granted') return;
+    const key = 'rcl_eng_nt_' + r.day + '_' + h;
+    try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { if (notifyHourly.last === key) return; notifyHourly.last = key; }
+    try { const n = new Notification('Submit report', { body: 'The report of your work of ' + showDay(r.day) + ' is not in yet.', tag: 'rcl-eng-report' }); n.onclick = () => { window.focus(); S.mw.email = ''; S.mw.day = S.today; go('mywork'); }; } catch (e) { /* the bar on the page stays */ }
+  }
+  function remindLoop() {
+    notifyHourly();
+    clearInterval(remindLoop.t);
+    remindLoop.t = setInterval(async () => { try { S.remind = (await eng({ action: 'remind' })).remind; } catch (e) { /* the next try */ } drawRemind(); notifyHourly(); }, 10 * 60000);
+  }
+  $('remind_go').addEventListener('click', () => { S.mw.email = ''; S.mw.day = S.today; S.mw.editRep = true; go('mywork'); });
+  $('remind_nt').addEventListener('click', async () => { try { await Notification.requestPermission(); } catch (e) { /* not possible here */ } drawRemind(); notifyHourly(); });
+
+  /* the date bar: ‹ date › Today Yesterday (a click on the date opens the calendar) */
+  function dateBar(box, d, onPick, opt) {
+    opt = opt || {};
+    const max = opt.max || S.today;
+    $(box).innerHTML = '<div class="dnav"><button type="button" data-n="-1" aria-label="Day before">‹</button><label class="dd"><b>' + esc(showDay(d)) + '</b><small>' + esc(wday(d)) + '</small><input type="date" value="' + d + '" max="' + max + '" aria-label="Pick a date"></label><button type="button" data-n="1" aria-label="Day after"' + (d >= max ? ' disabled' : '') + '>›</button></div>' +
+      '<button type="button" class="btn' + (d === S.today ? ' on' : '') + '" data-d="' + S.today + '">Today</button><button type="button" class="btn' + (d === addDays(S.today, -1) ? ' on' : '') + '" data-d="' + addDays(S.today, -1) + '">Yesterday</button>' + (opt.extra || '');
+    $(box).onclick = e => { const b = e.target.closest('button[data-n]'); if (b) { const n = addDays(d, Number(b.dataset.n)); if (n <= max) onPick(n); return; } const t = e.target.closest('button[data-d]'); if (t) onPick(t.dataset.d); };
+    $(box).querySelector('input').onchange = e => { if (e.target.value && e.target.value <= max) onPick(e.target.value); };
+  }
+
+  /* ================= MY WORK ================= */
+  const LOAD = {};
+  LOAD.mywork = async () => {
+    const me = S.me.user.email;
+    if (canView() && S.people.length > 1) {
+      $('mw_who_w').hidden = false;
+      const list = S.people.slice().sort((a, b) => String(a.name).localeCompare(String(b.name)));
+      if (!list.some(p => p.email === me)) list.unshift({ email: me, name: S.me.user.name });
+      $('mw_who').innerHTML = list.map(p => '<option value="' + esc(p.email) + '"' + (p.email === (S.mw.email || me) ? ' selected' : '') + '>' + esc(p.name || p.email) + (p.email === me ? ' (me)' : '') + '</option>').join('');
+    } else $('mw_who_w').hidden = true;
+    const D = S.mw.day || S.today;
+    dateBar('mw_dates', D, d => { S.mw.day = d; S.mw.editRep = false; LOAD.mywork().catch(failed); }, { max: addDays(S.today, 7) });
+    $('mw_body').innerHTML = '<div class="empty">…</div>';
+    const r = await eng({ action: 'days', email: S.mw.email || me, from: addDays(D, -1), to: D });
+    S.mw.data = r; if (r.remind) { S.remind = r.remind; drawRemind(); }
+    drawMyWork();
+  };
+  $('mw_who').addEventListener('change', () => { S.mw.email = $('mw_who').value === S.me.user.email ? '' : $('mw_who').value; S.mw.editRep = false; LOAD.mywork().catch(failed); });
+  const mwOwn = () => !S.mw.email || S.mw.email === S.me.user.email;
+  const mwMayChange = () => mwOwn() || isSuper();
+  // the works this person may put in a plan or a report of a day: the works given to him (the Super Admin: every active work)
+  function worksFor(d) {
+    const on = itemsOn('work', d), mine = S.mw.data ? S.mw.data.works : [];
+    return Object.keys(on).filter(k => isSuper() || mine.indexOf(k) > -1).map(k => on[k]).sort((a, b) => a.data.sort - b.data.sort || a.data.name.localeCompare(b.data.name));
+  }
+  function drawMyWork() {
+    const r = S.mw.data, D = S.mw.day || S.today, X = addDays(D, -1);
+    const dX = r.days.find(y => y.day === X) || null, dD = r.days.find(y => y.day === D) || null;
+    const who = mwOwn() ? '' : ' – ' + esc(r.name);
+    let h = '';
+    if (!r.works.length && mwOwn() && !isSuper()) h += '<div class="errbox">No work is given to you yet – the Super Admin gives the works. · तुम्हाला अजून कोणतेही काम दिलेले नाही – Super Admin काम देतील.</div>';
+    h += '<div class="two">';
+    h += '<section class="panel" id="mw_rep"><h2>Report' + who + '</h2><p class="muted" style="margin:0 0 10px">The work of <b>' + esc(longDay(X)) + '</b> – what was done, what is left and why.</p>' + (X > S.today ? '<div class="empty">This day has not come yet.</div>' : reportPart(dX, X)) + '</section>';
+    h += '<section class="panel" id="mw_plan"><h2>Plan' + who + '</h2><p class="muted" style="margin:0 0 10px">The program of <b>' + esc(longDay(D)) + '</b>.</p>' + planPart(dD, D) + '</section>';
+    h += '</div>';
+    $('mw_body').innerHTML = h;
+    wireMyWork(dX, X, dD, D);
+  }
+  const lineText = (l, d) => { const w = workOn(l.work, d), u = w ? w.data.unit : 'm', ln = layerName(l.work, l.layer, d);
+    return '<b>' + esc(workName(l.work, d)) + (ln ? ' · ' + esc(ln) : '') + '</b>' + (l.side ? ' <span class="sidebadge">' + esc(l.side === 'Both' ? 'BHS' : l.side) + '</span>' : '') +
+      (l.from !== null && l.from !== undefined ? ' ' + esc(showCh(l.from)) + ' → ' + esc(showCh(l.to)) : '') + ' · ' + fmt(l.qty) + ' ' + esc(u); };
+  // ---- the report part ----
+  function reportPart(doc, X) {
+    const plan = (doc && doc.plan) || [], rep = doc && doc.report;
+    if (rep && !S.mw.editRep) {
+      let h = '<div class="sent">✓ Sent ' + esc(when(doc.report_at)) + (doc.report_by && doc.report_by !== doc.email ? ' by ' + esc(doc.report_by) : '') + (doc.edits ? ' · ✎ changed ' + doc.edits + ' time' + (doc.edits > 1 ? 's' : '') + ' (last ' + esc(when(doc.edited_at)) + ')' : '') + '</div>';
+      rep.lines.forEach((l, i) => { const p = plan.find(y => y.id === l.plan) || {}; const u = unitOf(p.work, X);
+        h += '<div class="readline">' + (i + 1) + ') ' + lineText(p, X) + '<br><span class="muted">Done:</span> ' + (l.qty > 0 ? (l.from !== null ? esc(showCh(l.from)) + ' → ' + esc(showCh(l.to)) + ' · ' : '') + fmt(l.qty) + ' ' + esc(u) : '<b class="st-Not">not done</b>') +
+          (l.left > 0 ? ' · <span class="leftinfo">' + fmt(l.left) + ' ' + esc(u) + ' left</span>' : ' <span class="okinfo">✓</span>') + (l.reason ? '<br><span class="muted">Why:</span> ' + esc(l.reason) : '') + '</div>'; });
+      if (rep.extra.length) h += '<h3>Outside the plan</h3>' + rep.extra.map(l => '<div class="readline outside">+ ' + lineText(l, X) + (l.reason ? ' <span class="muted">– ' + esc(l.reason) + '</span>' : '') + '</div>').join('');
+      if (rep.note) h += '<p><span class="muted">Note:</span> ' + esc(rep.note) + '</p>';
+      if (mwMayChange()) h += '<div class="bar"><button type="button" class="btn" id="rp_change">✎ Change report</button><button type="button" class="btn small" id="rp_text">Report as text</button></div>';
+      else h += '<div class="bar"><button type="button" class="btn small" id="rp_text">Report as text</button></div>';
+      return h;
+    }
+    if (!mwMayChange()) return '<div class="empty">' + (plan.length ? 'The report is not in yet.' : 'No plan and no report for this day.') + '</div>';
+    let h = rep ? '<div class="sugg tag warn" style="display:block;margin-bottom:8px">Changing the report sent ' + esc(when(doc.report_at)) + ' – the change is kept (✎).</div>' : '';
+    if (!plan.length) h += '<p class="muted">No plan was made for this day. Add the work done below (outside the plan), or write a note.</p>';
+    const got = {}; if (rep) rep.lines.forEach(l => { got[l.plan] = l; });
+    plan.forEach((p, i) => {
+      const u = unitOf(p.work, X), g = got[p.id], m = u === 'm';
+      const st = !g ? '' : g.qty <= 0 ? 'none' : (m ? (g.from === p.from && g.to === p.to) : g.qty === p.qty) ? 'all' : 'part';
+      h += '<div class="line" data-plan="' + esc(p.id) + '" data-unit="' + esc(u) + '" data-pfrom="' + (p.from === null ? '' : p.from) + '" data-pto="' + (p.to === null ? '' : p.to) + '" data-pqty="' + p.qty + '">' +
+        '<div class="lh">' + (i + 1) + ') ' + lineText(p, X) + (p.note ? '<br><small>' + esc(p.note) + '</small>' : '') + '</div>' +
+        '<div class="seg"><label><input type="radio" name="st_' + esc(p.id) + '" value="all"' + (st === 'all' ? ' checked' : '') + '> Done as planned</label><label><input type="radio" name="st_' + esc(p.id) + '" value="part"' + (st === 'part' ? ' checked' : '') + '> ' + (m ? 'Other chainage / part' : 'Part') + '</label><label><input type="radio" name="st_' + esc(p.id) + '" value="none"' + (st === 'none' ? ' checked' : '') + '> Not done</label></div>' +
+        '<div class="lgrid r-part"' + (st === 'part' ? '' : ' hidden') + '>' + (m ? '<div class="field" style="margin:0"><span class="lbl">Done from</span><input class="r-from" placeholder="' + esc(showCh(p.from)) + '" value="' + esc(g && st === 'part' ? showCh(g.from) : '') + '" inputmode="decimal"></div><div class="field" style="margin:0"><span class="lbl">Done to</span><input class="r-to" placeholder="' + esc(showCh(p.to)) + '" value="' + esc(g && st === 'part' ? showCh(g.to) : '') + '" inputmode="decimal"></div>'
+          : '<div class="field" style="margin:0"><span class="lbl">Done (' + esc(u) + ')</span><input class="r-qty" type="number" min="0" step="any" value="' + (g && st === 'part' ? g.qty : '') + '"></div>') + '</div>' +
+        '<div class="lgrid r-why" style="margin-top:8px"' + (st === 'part' || st === 'none' ? '' : ' hidden') + '><div class="field wide" style="margin:0"><span class="lbl"><span class="r-left"></span> Why is it left? *</span><input class="r-reason" list="dl_reasons" maxlength="200" placeholder="Type the reason (others\' reasons are suggested)" value="' + esc(g ? g.reason : '') + '"></div></div>' +
+        '</div>';
+    });
+    h += '<h3>Work outside the plan</h3><div id="rx_lines">' + (rep ? rep.extra : []).map(l => extraLine(l, X)).join('') + '</div><button type="button" class="btn small" id="rx_add">+ Work outside the plan</button>';
+    h += '<div class="field" style="margin-top:12px"><label for="rp_note">Note</label><textarea id="rp_note" maxlength="500">' + esc(rep ? rep.note : '') + '</textarea></div>';
+    h += '<div class="bar"><button type="button" class="btn primary" id="rp_send">' + (rep ? 'Save the change' : 'Send report') + '</button>' + (rep ? '<button type="button" class="btn" id="rp_cancel">Cancel</button>' : '') + '</div>';
+    return h;
+  }
+  // a line of work: work, layer, side, chainage from–to (metres) or the quantity; for the plan and for work outside the plan
+  function workLine(cls, l, d, extra) {
+    l = l || {}; const W = worksFor(d), w = l.work ? workOn(l.work, d) : W[0];
+    const opts = W.map(x => '<option value="' + esc(x.item) + '"' + (w && x.item === w.item ? ' selected' : '') + '>' + esc(x.data.name) + '</option>').join('') + (w && !W.some(x => x.item === w.item) ? '<option value="' + esc(w.item) + '" selected>' + esc(w.data.name) + '</option>' : '');
+    return '<div class="line ' + cls + '" data-id="' + esc(l.id || '') + '"><div class="lgrid">' +
+      '<div class="field" style="margin:0"><span class="lbl">Work</span><select class="l-work">' + (opts || '<option value="">– no work given –</option>') + '</select></div>' +
+      '<div class="field l-layer-w" style="margin:0"><span class="lbl">Layer</span><select class="l-layer"></select></div>' +
+      '<div class="field" style="margin:0"><span class="lbl">Side</span><select class="l-side"></select></div>' +
+      '<div class="field l-ch" style="margin:0"><span class="lbl">From</span><input class="l-from" placeholder="8+000" inputmode="decimal" value="' + esc(l.from === null || l.from === undefined ? '' : showCh(l.from)) + '"></div>' +
+      '<div class="field l-ch" style="margin:0"><span class="lbl">To</span><input class="l-to" placeholder="8+500" inputmode="decimal" value="' + esc(l.to === null || l.to === undefined ? '' : showCh(l.to)) + '"></div>' +
+      '<div class="field l-q" style="margin:0"><span class="lbl l-qlbl">Quantity</span><input class="l-qty" type="number" min="0" step="any" value="' + esc(l.qty === undefined || l.qty === null || l.from !== null && l.from !== undefined ? '' : l.qty) + '"></div>' +
+      '<div class="field wide" style="margin:0"><span class="lbl">' + (extra ? 'Remark (why outside the plan)' : 'Note') + '</span><input class="' + (extra ? 'l-reason' : 'l-note') + '" maxlength="200" value="' + esc(extra ? l.reason || '' : l.note || '') + '"' + (extra ? ' list="dl_reasons"' : '') + '></div>' +
+      '</div><div style="display:flex;justify-content:space-between;margin-top:6px"><span class="l-len muted"></span><button type="button" class="link del l-del">Remove</button></div></div>';
+  }
+  const extraLine = (l, d) => workLine('xline', l, d, true);
+  function fillLine(el, d, l) {
+    const w = workOn(el.querySelector('.l-work').value, d); if (!w) return;
+    const ls = el.querySelector('.l-layer'), sd = el.querySelector('.l-side'), keepL = l ? l.layer : ls.value, keepS = l ? l.side : sd.value;
+    ls.innerHTML = w.data.layers.map(x => '<option value="' + esc(x.key) + '"' + (x.key === keepL ? ' selected' : '') + '>' + esc(x.name) + (x.mm ? ' (' + x.mm + ' mm)' : '') + '</option>').join('');
+    el.querySelector('.l-layer-w').hidden = !w.data.layers.length;
+    const sides = sidesFor(w, d), m = w.data.unit === 'm';
+    sd.innerHTML = (m ? '' : '<option value="">–</option>') + sides.map(x => '<option value="' + esc(x) + '"' + (x === keepS ? ' selected' : '') + '>' + esc(sideLabel(x)) + '</option>').join('');
+    el.querySelectorAll('.l-ch').forEach(x => { x.hidden = !m; }); el.querySelector('.l-q').hidden = m;
+    el.querySelector('.l-qlbl').textContent = 'Quantity (' + w.data.unit + ')';
+    lenOf(el);
+  }
+  function lenOf(el) {
+    const w = workOn(el.querySelector('.l-work').value, S.mw.day || S.today); if (!w) return;
+    const a = chain(el.querySelector('.l-from').value), b = chain(el.querySelector('.l-to').value);
+    el.querySelector('.l-len').textContent = w.data.unit === 'm' ? (a !== null && b !== null && isFinite(a) && isFinite(b) && b > a ? fmt(b - a) + ' m' : '') : '';
+  }
+  const readLine = el => { const g = c => (el.querySelector(c) || {}).value || ''; return { id: el.dataset.id || undefined, work: g('.l-work'), layer: g('.l-layer'), side: g('.l-side'), from: g('.l-from'), to: g('.l-to'), qty: g('.l-qty'), note: g('.l-note'), reason: g('.l-reason') }; };
+  // ---- the plan part ----
+  function planPart(doc, D) {
+    const plan = (doc && doc.plan) || [], t = S.today, mayDay = isSuper() || (D >= t && D <= addDays(t, 7));
+    const fixed = !!(doc && doc.report);
+    if (!mwMayChange() || !mayDay || fixed) {
+      let h = plan.length ? plan.map((p, i) => '<div class="readline">' + (i + 1) + ') ' + lineText(p, D) + (p.note ? '<br><small class="muted">' + esc(p.note) + '</small>' : '') + '</div>').join('') : '<div class="empty">No plan for this day.</div>';
+      if (doc && doc.plan_at) h += '<p class="muted">Made ' + esc(when(doc.plan_at)) + (fixed ? ' · its report is in, so it stays as it was' : '') + '</p>';
+      if (mwMayChange() && !mayDay && !fixed && D < t) h += '<p class="muted">A day gone by: report the work done (outside the plan) on the report of this day.</p>';
+      return h;
+    }
+    let h = doc && doc.plan_at ? '<div class="sent" style="background:#E8EEFC;color:var(--blue)">Saved ' + esc(when(doc.plan_at)) + ' – you can still change it until the report of this day is in.</div>' : '';
+    h += '<div id="pl_lines">' + plan.map(p => workLine('pline', p, D, false)).join('') + '</div>';
+    h += '<button type="button" class="btn small" id="pl_add">+ Add line</button>';
+    h += '<div class="bar"><button type="button" class="btn primary" id="pl_save">Save plan</button></div>';
+    return h;
+  }
+  function wireMyWork(dX, X, dD, D) {
+    const body = $('mw_body');
+    body.querySelectorAll('.pline').forEach((el, i) => fillLine(el, D, dD.plan[i]));
+    body.querySelectorAll('#rx_lines .xline').forEach((el, i) => fillLine(el, X, dX.report.extra[i]));
+    body.querySelectorAll('.line[data-plan]').forEach(repLeft);
+    body.oninput = e => { const l = e.target.closest('.pline, .xline'); if (l && (e.target.classList.contains('l-from') || e.target.classList.contains('l-to'))) lenOf(l); const r = e.target.closest('.line[data-plan]'); if (r) repLeft(r); };
+    body.onchange = e => {
+      const l = e.target.closest('.pline, .xline'); if (l && e.target.classList.contains('l-work')) fillLine(l, l.classList.contains('pline') ? D : X);
+      const r = e.target.closest('.line[data-plan]'); if (r && e.target.type === 'radio') { const v = e.target.value; r.querySelector('.r-part').hidden = v !== 'part'; r.querySelector('.r-why').hidden = v === 'all'; repLeft(r); }
+    };
+    body.onclick = async e => {
+      const t = e.target;
+      if (t.classList.contains('l-del')) { t.closest('.line').remove(); return; }
+      if (t.id === 'pl_add') { if (!worksFor(D).length) { toast('No work is given to you yet – the Super Admin gives the works.', true); return; } $('pl_lines').insertAdjacentHTML('beforeend', workLine('pline', null, D, false)); const el = $('pl_lines').lastElementChild; fillLine(el, D); el.querySelector('.l-from').focus(); return; }
+      if (t.id === 'rx_add') { if (!worksFor(X).length) { toast('No work is given to you yet – the Super Admin gives the works.', true); return; } $('rx_lines').insertAdjacentHTML('beforeend', extraLine(null, X)); fillLine($('rx_lines').lastElementChild, X); return; }
+      if (t.id === 'rp_change') { S.mw.editRep = true; drawMyWork(); return; }
+      if (t.id === 'rp_cancel') { S.mw.editRep = false; drawMyWork(); return; }
+      if (t.id === 'rp_text') { showText(dX, X, S.mw.data.name); return; }
+      if (t.id === 'pl_save') return savePlan(t, dD, D);
+      if (t.id === 'rp_send') return sendReport(t, dX, X);
+    };
+  }
+  function repLeft(r) {
+    const v = (r.querySelector('input[type=radio]:checked') || {}).value, u = r.dataset.unit, pq = Number(r.dataset.pqty);
+    let done = 0;
+    if (v === 'all') done = pq;
+    else if (v === 'part') { if (u === 'm') { const a = chain(r.querySelector('.r-from').value), b = chain(r.querySelector('.r-to').value); done = a !== null && b !== null && isFinite(a) && isFinite(b) && b > a ? b - a : 0; } else done = Number(r.querySelector('.r-qty').value) || 0; }
+    const left = Math.max(0, Math.round((pq - done) * 1000) / 1000), el = r.querySelector('.r-left');
+    el.textContent = v === 'none' ? 'Nothing done –' : left > 0 ? fmt(left) + ' ' + u + ' left –' : '';
+    r.querySelector('.r-why').hidden = v === 'all' || !v || (v === 'part' && left <= 0);
+  }
+  async function savePlan(b, old, D) {
+    if (b.disabled) return; b.disabled = true;
+    try {
+      const lines = [...document.querySelectorAll('#pl_lines .pline')].map(readLine);
+      const r = await eng({ action: 'planSave', day: D, email: S.mw.email || '', lines: lines, ver: old ? old.ver : 0 });
+      toast('Plan saved: ' + lines.length + ' line' + (lines.length === 1 ? '' : 's') + ' for ' + showDay(D) + '.');
+      replaceDay(r.doc); drawMyWork();
+    } catch (e) { failed(e); } finally { b.disabled = false; }
+  }
+  async function sendReport(b, old, X) {
+    if (b.disabled) return;
+    const lines = [], miss = [];
+    document.querySelectorAll('#mw_rep .line[data-plan]').forEach((r, i) => {
+      const v = (r.querySelector('input[type=radio]:checked') || {}).value, id = r.dataset.plan, why = (r.querySelector('.r-reason') || {}).value || '';
+      if (!v) { miss.push(i + 1); return; }
+      if (v === 'all') lines.push({ plan: id, from: r.dataset.pfrom === '' ? '' : Number(r.dataset.pfrom), to: r.dataset.pto === '' ? '' : Number(r.dataset.pto), qty: Number(r.dataset.pqty), reason: '' });
+      else if (v === 'none') lines.push({ plan: id, none: true, reason: why });
+      else lines.push({ plan: id, from: (r.querySelector('.r-from') || {}).value || '', to: (r.querySelector('.r-to') || {}).value || '', qty: (r.querySelector('.r-qty') || {}).value || '', reason: why });
+    });
+    if (miss.length) { toast('Plan line ' + miss.join(', ') + ': say whether it was done (Done as planned / part / Not done).', true); return; }
+    const extra = [...document.querySelectorAll('#rx_lines .xline')].map(readLine);
+    b.disabled = true;
+    try {
+      const r = await eng({ action: 'reportSave', day: X, email: S.mw.email || '', report: { lines: lines, extra: extra, note: $('rp_note').value }, ver: old ? old.ver : 0 });
+      toast(old && old.report ? 'Report changed (✎).' : 'Report sent – thank you.');
+      replaceDay(r.doc); S.mw.editRep = false;
+      if (mwOwn() && S.remind && S.remind.day === X) { S.remind.due = false; drawRemind(); }
+      try { S.reasons = (await eng({ action: 'reasons' })).reasons; $('dl_reasons').innerHTML = S.reasons.map(t => '<option value="' + esc(t) + '">').join(''); } catch (e) { /* later */ }
+      drawMyWork();
+    } catch (e) { failed(e); } finally { b.disabled = false; }
+  }
+  function replaceDay(doc) { const L = S.mw.data.days, i = L.findIndex(y => y.day === doc.day); if (i > -1) L[i] = doc; else L.push(doc); }
+  // a day's report as text (to send on WhatsApp)
+  function reportText(doc, X, name) {
+    if (!doc) return '';
+    const plan = doc.plan || [], rep = doc.report, out = [];
+    out.push('Report – work of ' + longDay(X)); out.push((name || doc.name || doc.email) + (rep ? ' · sent ' + when(doc.report_at) + (doc.edits ? ' (✎ ' + doc.edits + ')' : '') : ' · not sent'));
+    const t = l => workName(l.work, X) + (layerName(l.work, l.layer, X) ? ' · ' + layerName(l.work, l.layer, X) : '') + (l.side ? ' · ' + l.side : '') + (l.from !== null && l.from !== undefined ? ' ' + showCh(l.from) + ' → ' + showCh(l.to) : '');
+    plan.forEach((p, i) => { const l = rep && rep.lines.find(y => y.plan === p.id), u = unitOf(p.work, X);
+      out.push((i + 1) + ') ' + t(p) + ' – planned ' + fmt(p.qty) + ' ' + u + (l ? ', done ' + (l.qty > 0 ? (l.from !== null ? showCh(l.from) + ' → ' + showCh(l.to) + ' ' : '') + fmt(l.qty) + ' ' + u : 'nothing') + (l.left > 0 ? ', ' + fmt(l.left) + ' ' + u + ' left' + (l.reason ? ' – ' + l.reason : '') : '') : '')); });
+    if (rep && rep.extra.length) { out.push('Outside the plan:'); rep.extra.forEach(l => out.push('+ ' + t(l) + ' ' + fmt(l.qty) + ' ' + unitOf(l.work, X) + (l.reason ? ' – ' + l.reason : ''))); }
+    if (rep && rep.note) out.push('Note: ' + rep.note);
+    return out.join('\n');
+  }
+  async function showText(doc, X, name) {
+    const txt = reportText(doc, X, name);
+    const v = await ask('Report as text', '<pre id="rt_pre">' + esc(txt) + '</pre>', [{ label: 'Close', value: null }, { label: 'Copy text', value: 'copy', primary: true }]);
+    if (v === 'copy') { try { await navigator.clipboard.writeText(txt); toast('Copied – paste it in WhatsApp.'); } catch (e) { toast('Could not copy here – select the text and copy it.', true); } }
+  }
+
+  /* ================= DASHBOARD ================= */
+  const stCls = s => 'st-' + String(s || '').split(' ')[0];
+  LOAD.dashboard = async () => {
+    const R = S.db.day || S.today, W = addDays(R, -1);
+    $('db_date').textContent = longDay(R); $('db_sub').textContent = 'Report date · the work of ' + longDay(W) + ' and the program of ' + showDay(R);
+    dateBar('db_dates', R, d => { S.db.day = d; LOAD.dashboard().catch(failed); });
+    $('db_cards').innerHTML = '<div class="empty">…</div>';
+    const r = await eng({ action: 'dash', day: W }); S.db.data = r; drawDash(r, R);
+  };
+  function ring(p) { const c = 2 * Math.PI * 18, v = Math.max(0, Math.min(100, p)) / 100 * c; return '<svg class="ring" width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="18" fill="none" stroke="#DDE7E0" stroke-width="6"/><circle cx="24" cy="24" r="18" fill="none" stroke="#2E7D32" stroke-width="6" stroke-dasharray="' + v + ' ' + c + '" transform="rotate(-90 24 24)" stroke-linecap="round"/></svg>'; }
+  function drawDash(r, R) {
+    const W = r.day;
+    $('db_chips').innerHTML = r.works.filter(w => w.lines.length || w.missing.length).map(w => {
+      const miss = !w.senders.length;
+      return '<button type="button" class="wchip' + (miss ? ' miss' : '') + '" data-work="' + esc(w.item) + '"><b>' + esc(w.name) + '</b><small>' + (miss ? 'not received' : w.senders.map(s => esc(s.name) + ' · ' + esc(hm(s.at))).join(', ') + (w.missing.length ? ' · ' + w.missing.length + ' pending' : '')) + '</small></button>';
+    }).join('') || '<div class="muted">No work was planned or reported for ' + esc(showDay(W)) + '.</div>';
+    $('db_attn').innerHTML = r.attention.length ? '<button type="button" class="attn" id="db_attn_b">! ' + r.attention.length + ' thing' + (r.attention.length > 1 ? 's' : '') + ' need' + (r.attention.length > 1 ? '' : 's') + ' attention</button><ul class="attnlist" id="db_attn_l" hidden>' + r.attention.map(a => '<li>' + esc(a.text) + '</li>').join('') + '</ul>' : '';
+    if ($('db_attn_b')) $('db_attn_b').onclick = () => { $('db_attn_l').hidden = !$('db_attn_l').hidden; };
+    const T = r.tiles;
+    $('db_tiles').innerHTML =
+      '<div class="tile"><small>Planned on ' + esc(showDay(W)) + '</small><b>' + fmt(T.planned, 0) + '</b><i>m</i><span>' + T.reportsIn + '/' + T.reportsDue + ' reports in</span></div>' +
+      '<div class="tile"><small>Achieved against plan</small><b>' + fmt(T.done, 0) + '</b><i>m</i><span><b style="font:inherit;font-weight:700;color:var(--ink)">' + T.pct + '%</b> of plan</span>' + ring(T.pct) + '</div>' +
+      '<div class="tile"><small>Works</small><b>' + T.complete + '</b><i>/ ' + T.worksTotal + ' complete</i><span>' + T.partly + ' partly · ' + T.notDone + ' not done · ' + T.more + ' more</span></div>' +
+      '<div class="tile"><small>Work outside the plan</small><b>' + fmt(T.outside, 0) + '</b><i>m</i><span>e.g. after a machine was shifted</span></div>';
+    // the whole road: done on W (colour), the program of R (dashed gold)
+    const range = r.road ? { from: r.road.ch_from, to: r.road.ch_to } : spanOf([].concat(...r.works.map(w => w.lines.concat(w.program))));
+    const bars = [], prog = [];
+    r.works.forEach(w => { w.lines.forEach(l => { if (l.from !== null && l.done > 0) bars.push({ from: l.from, to: l.to, side: l.side, fill: workColour(w.item), hatch: l.outside, title: w.name + ' · ' + showCh(l.from) + '–' + showCh(l.to) + ' · ' + l.name }); });
+      w.program.forEach(p => { if (p.from !== null) prog.push({ from: p.from, to: p.to, side: p.side, title: 'Program: ' + w.name + ' · ' + showCh(p.from) + '–' + showCh(p.to) + ' · ' + p.name }); }); });
+    $('db_over').innerHTML = range ? '<div class="stripwrap">' + roadSvg(range, r.sides, bars, prog, { km: true, h: 26, W: $('db_over').clientWidth }) + '</div><div class="legend">' + r.works.filter(w => w.lines.length || w.program.length).map(w => '<span><i style="background:' + workColour(w.item) + '"></i>' + esc(w.name) + '</span>').join('') + '<span><i class="prog"></i>program of ' + esc(showDay(R)) + '</span><span><i style="background:repeating-linear-gradient(45deg,#999 0 3px,#fff 3px 6px)"></i>outside the plan</span></div>' : '<div class="empty">The road is not set yet (Set-up → Road).</div>';
+    $('db_cards_h').textContent = showDay(W) + ' – planned against achieved';
+    $('db_cards').innerHTML = r.works.filter(w => w.lines.length || w.missing.length).map(w => workCard(w, W)).join('') || '<div class="empty">Nothing to show for ' + esc(showDay(W)) + '.</div>';
+  }
+  function spanOf(lines) { const L = lines.filter(l => l.from !== null && l.from !== undefined); if (!L.length) return null; return { from: Math.min(...L.map(l => Math.min(l.from, l.to))), to: Math.max(...L.map(l => Math.max(l.from, l.to))) }; }
+  function workCard(w, W) {
+    const col = workColour(w.item), u = w.unit;
+    const planned = w.lines.filter(l => !l.outside), outside = w.lines.filter(l => l.outside);
+    let h = '<article class="wcard" style="border-top-color:' + col + '"><div class="wc-h"><div><h3>' + esc(w.name) + '</h3><div class="muted" style="font-size:14px">' +
+      (planned.length ? 'Planned ' + planned.map(l => (l.pFrom !== null ? esc(showCh(l.pFrom)) + ' → ' + esc(showCh(l.pTo)) + ' ' : fmt(l.planned) + ' ' + esc(u) + ' ') + (l.side ? '<span class="sidebadge">' + esc(l.side === 'Both' ? 'BHS' : l.side) + '</span>' : '') + (l.layer ? ' <small>' + esc(layerName(w.item, l.layer, W)) + '</small>' : '')).join(' · ') : 'Nothing planned') + '</div></div>' +
+      '<span class="st ' + stCls(w.status) + '">' + esc(w.status) + '</span></div><div class="wc-b">';
+    if (!w.senders.length) {
+      h += '<p style="margin:4px 0">The report of ' + esc(showDay(W)) + ' has not come in' + (w.missing.length ? ' – ' + w.missing.map(m => esc(m.name)).join(', ') : '') + '.</p></div></article>';
+      return h.replace('class="wcard"', 'class="wcard" style="border-color:#E7A19B"');
+    }
+    if (u === 'm') {
+      const sp = spanOf(w.lines.map(l => ({ from: l.pFrom !== null ? l.pFrom : l.from, to: l.pTo !== null ? l.pTo : l.to })).concat(w.lines.map(l => ({ from: l.from, to: l.to }))));
+      if (sp) {
+        const pad = Math.max(30, (sp.to - sp.from) * 0.08), range = { from: Math.max(0, sp.from - pad), to: sp.to + pad };
+        const bars = w.lines.filter(l => l.from !== null && l.done > 0).map(l => ({ from: l.from, to: l.to, side: l.side, fill: col, hatch: l.outside, title: (l.outside ? 'Outside the plan: ' : 'Done: ') + showCh(l.from) + '–' + showCh(l.to) + ' · ' + l.name }));
+        const prog = planned.filter(l => l.pFrom !== null).map(l => ({ from: l.pFrom, to: l.pTo, side: l.side, title: 'Planned ' + showCh(l.pFrom) + '–' + showCh(l.pTo) }));
+        const marks = [...new Set([].concat(...w.lines.map(l => [l.pFrom, l.pTo, l.from, l.to])).filter(v => v !== null && v !== undefined))].sort((a, b) => a - b);
+        h += '<div class="stripwrap" style="margin:6px 0">' + roadSvg(range, sidesOfLines(w.lines), bars, prog, { marks: marks, h: 30, W: $('db_cards').clientWidth - 34 }) + '</div>';
+      }
+    }
+    h += '<div><span class="pct ' + (w.pct >= 100 ? (w.done > w.planned + 0.001 ? 'st-More' : 'st-As') : 'st-Partly') + '">' + (w.planned > 0 ? w.pct + '%' : '') + '</span><span class="big">' + fmt(w.done) + '</span> / ' + fmt(w.planned) + ' ' + esc(u) + ' achieved</div>';
+    outside.forEach(l => { h += '<div class="outside">+ ' + fmt(l.done) + ' ' + esc(u) + (l.side ? ' ' + esc(l.side) : '') + (l.from !== null ? ' (' + esc(showCh(l.from)) + '–' + esc(showCh(l.to)) + ')' : '') + ' · outside the plan' + (l.reason ? ' – ' + esc(l.reason) : '') + '</div>'; });
+    planned.filter(l => l.reason).forEach(l => { h += '<div>Remark: ' + esc(l.reason) + ' <span class="muted">(' + esc(l.name) + ')</span></div>'; });
+    h += '</div>';
+    if (w.week) h += '<div class="row">Last 7 days: <b>' + fmt(w.week.done) + ' / ' + fmt(w.week.planned) + ' ' + esc(u) + ' · ' + w.week.pct + '%</b>' + (w.week.outside ? ' <span class="muted">+ ' + fmt(w.week.outside) + ' outside the plan</span>' : '') + '</div>';
+    if (w.program.length) h += '<div class="row"><span class="muted">Program of ' + esc(showDay(addDays(W, 1))) + ':</span> ' + w.program.map(p => (p.from !== null ? esc(showCh(p.from)) + ' → ' + esc(showCh(p.to)) : fmt(p.qty) + ' ' + esc(u)) + (p.side ? ' <span class="sidebadge">' + esc(p.side === 'Both' ? 'BHS' : p.side) + '</span>' : '') + ' <small class="muted">' + esc(p.name) + '</small>').join(' · ') + '</div>';
+    h += '<div class="row">' + w.senders.map(s => '👤 Sent by <b>' + esc(s.name) + '</b> · ' + esc(hm(s.at)) + (s.edits ? ' ✎' : '') + (s.late ? ' <span class="tag warn">late</span>' : '') + ' <button type="button" class="link" data-view="' + esc(s.email) + '" data-day="' + W + '" style="margin-left:auto">View report</button>').join('</div><div class="row">') + '</div>';
+    if (w.missing.length) h += '<div class="row st-No">Report pending: ' + w.missing.map(m => esc(m.name)).join(', ') + '</div>';
+    return h + '</article>';
+  }
+  function sidesOfLines(lines) { const has = n => lines.some(l => l.side === n || (l.side === 'Both' && (n === 'LHS' || n === 'RHS'))); const L = ['LHS', 'Median', 'RHS'].filter(has); lines.forEach(l => { if (l.side && l.side !== 'Both' && L.indexOf(l.side) === -1) L.push(l.side); }); return L.length ? L : ['LHS', 'RHS']; }
+  // a picture of the road (as seen from above): one lane per side; the bars done; the dashed program
+  function roadSvg(range, sides, bars, prog, o) {
+    o = o || {}; const W = Math.max(300, Math.round(o.W || 1000)), lh = o.h || 26, top = o.km ? 18 : 6, L = 34, Wd = W - L - 8, H = top + sides.length * lh + 8 + (o.marks || o.km ? 18 : 0);
+    const len = Math.max(1, range.to - range.from), x = v => L + (v - range.from) / len * Wd, wdt = (a, b) => Math.max(3, Math.abs(x(b) - x(a)));
+    const rowOf = s => sides.indexOf(s), rows = s => s === 'Both' ? ['LHS', 'RHS'].map(rowOf).filter(i => i > -1) : [rowOf(s)].filter(i => i > -1);
+    let g = '<svg class="strip" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Road ' + esc(showCh(range.from)) + ' to ' + esc(showCh(range.to)) + '"><defs><pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#fff" fill-opacity=".0"/><line x1="0" y1="0" x2="0" y2="6" stroke="#fff" stroke-width="3" stroke-opacity=".55"/></pattern></defs>';
+    g += '<rect x="' + (L - 2) + '" y="' + (top - 4) + '" width="' + (Wd + 4) + '" height="' + (sides.length * lh + 8) + '" fill="var(--verge)" rx="3"/><rect x="' + L + '" y="' + top + '" width="' + Wd + '" height="' + sides.length * lh + '" fill="var(--road)"/>';
+    sides.forEach((s, i) => { g += '<text x="' + (L - 8) + '" y="' + (top + i * lh + lh / 2 + 4) + '" text-anchor="end" font-size="12" font-weight="700" fill="#5E6B75">' + esc(s === 'Median' ? 'M' : s === 'LHS' ? 'L' : s === 'RHS' ? 'R' : s.slice(0, 3)) + '</text>'; if (i) g += '<line x1="' + L + '" x2="' + (L + Wd) + '" y1="' + (top + i * lh) + '" y2="' + (top + i * lh) + '" stroke="#fff" stroke-width="1.5" stroke-dasharray="10 8"/>'; });
+    bars.forEach(b => rows(b.side).forEach(i => { const y = top + i * lh + 4; g += '<rect x="' + x(Math.min(b.from, b.to)) + '" y="' + y + '" width="' + wdt(b.from, b.to) + '" height="' + (lh - 8) + '" fill="' + b.fill + '"><title>' + esc(b.title || '') + '</title></rect>' + (b.hatch ? '<rect x="' + x(Math.min(b.from, b.to)) + '" y="' + y + '" width="' + wdt(b.from, b.to) + '" height="' + (lh - 8) + '" fill="url(#hatch)"/>' : ''); }));
+    prog.forEach(p => rows(p.side).forEach(i => { const y = top + i * lh + 2; g += '<rect x="' + x(Math.min(p.from, p.to)) + '" y="' + y + '" width="' + wdt(p.from, p.to) + '" height="' + (lh - 4) + '" fill="none" stroke="#F2B705" stroke-width="2.5" stroke-dasharray="6 4"><title>' + esc(p.title || '') + '</title></rect>'; }));
+    const yb = top + sides.length * lh + 6;
+    if (o.km) { const step = [200, 500, 1000, 2000, 5000, 10000, 20000].find(t => t / len * Wd >= 46) || 50000; for (let v = Math.ceil(range.from / step) * step; v <= range.to; v += step) g += '<line x1="' + x(v) + '" x2="' + x(v) + '" y1="' + (yb - 2) + '" y2="' + (yb + 3) + '" stroke="#8D99A3"/><text x="' + x(v) + '" y="' + (yb + 15) + '" font-size="11" text-anchor="' + (L + Wd - x(v) < 20 ? 'end' : 'middle') + '" fill="#5E6B75">' + (step >= 1000 ? (v / 1000) + ' km' : showCh(v)) + '</text>'; }
+    if (o.marks) { let last = -1e9; o.marks.forEach(v => { const px = x(v); g += '<line x1="' + px + '" x2="' + px + '" y1="' + (yb - 2) + '" y2="' + (yb + 4) + '" stroke="#8D99A3"/>'; if (px - last > 70) { g += '<text x="' + px + '" y="' + (yb + 16) + '" font-size="12" text-anchor="middle" fill="#5E6B75">' + esc(showCh(v)) + '</text>'; last = px; } }); }
+    return g + '</svg>';
+  }
+  let reT = null;
+  window.addEventListener('resize', () => { clearTimeout(reT); reT = setTimeout(() => { if (S.page === 'strip' && S.sc.data) drawStrip(S.sc.data, S.sc.day || S.today); if (S.page === 'dashboard' && S.db.data) drawDash(S.db.data, S.db.day || S.today); }, 250); });
+  $('db_cards').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) viewReport(b.dataset.view, b.dataset.day); });
+  $('db_chips').addEventListener('click', e => { const b = e.target.closest('[data-work]'); if (!b) return; const i = [...document.querySelectorAll('#db_cards .wcard')].findIndex(c => c.querySelector('h3').textContent === b.querySelector('b').textContent); const c = document.querySelectorAll('#db_cards .wcard')[i]; if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  async function viewReport(email, day) {
+    try { const r = await eng({ action: 'dayView', email: email, day: day }); if (!r.doc) { toast('No report.', true); return; } showText(r.doc, day, r.name); } catch (e) { failed(e); }
+  }
+
+  /* ================= STRIP CHART ================= */
+  LOAD.strip = async () => {
+    const R = S.sc.day || S.today, W = addDays(R, -1);
+    dateBar('sc_dates', R, d => { S.sc.day = d; LOAD.strip().catch(failed); });
+    $('sc_chart').innerHTML = '<div class="empty">…</div>';
+    const r = await eng({ action: 'strip', day: W }); S.sc.data = r; drawStrip(r, R);
+  };
+  function drawStrip(r, R) {
+    const road = r.road;
+    $('sc_title').textContent = 'Strip chart' + (road ? ' · ' + road.name : '') + ' · ' + (S.me.siteName || S.me.site);
+    $('sc_sub').textContent = 'How far each layer has got – filled in by itself from the daily reports · ' + showCh(r.range.from) + ' to ' + showCh(r.range.to);
+    $('sc_ason').textContent = longDay(R);
+    const first = r.first < addDays(S.today, -1) ? addDays(r.first, 1) : addDays(S.today, -30), days = Math.max(1, Math.round((Date.parse(S.today) - Date.parse(first)) / 86400000));
+    const sl = $('sc_slider'); sl.min = 0; sl.max = days; sl.value = Math.round((Date.parse(R) - Date.parse(first)) / 86400000);
+    $('sc_s0').textContent = showDay(first); $('sc_s1').textContent = showDay(S.today);
+    sl.oninput = () => { $('sc_ason').textContent = longDay(addDays(first, Number(sl.value))); };
+    sl.onchange = () => { S.sc.day = addDays(first, Number(sl.value)); LOAD.strip().catch(failed); };
+    $('sc_h').textContent = r.sides.join(', ') + ' · colour = highest layer finished';
+    if (!r.layers.length) { $('sc_chart').innerHTML = '<div class="empty">No work is set for the strip chart yet (Set-up → Works &amp; layers).</div>'; $('sc_legend').innerHTML = ''; $('sc_layers').innerHTML = ''; return; }
+    const col = id => layerColour(id, r.layers), name = id => (r.layers.find(l => l.id === id) || {}).name || id;
+    // in pieces of 4 km (a phone shows 2 km)
+    const step = window.innerWidth < 700 ? 2000 : 4000, chunks = [];
+    for (let a = Math.floor(r.range.from / 1000) * 1000; a < r.range.to; a += step) chunks.push([Math.max(a, r.range.from), Math.min(a + step, r.range.to)]);
+    $('sc_chart').innerHTML = chunks.map(c => {
+      const range = { from: c[0], to: c[1] }, bars = [], prog = [], outl = [];
+      r.sides.forEach(sd => { (r.strip[sd] || { pieces: [] }).pieces.forEach(p => { if (p.to > c[0] && p.from < c[1]) bars.push({ from: Math.max(p.from, c[0]), to: Math.min(p.to, c[1]), side: sd, fill: col(p.layer), title: name(p.layer) + ' · ' + showCh(p.from) + '–' + showCh(p.to) }); });
+        (r.yesterday[sd] || []).forEach(p => { if (p.to > c[0] && p.from < c[1]) outl.push({ from: Math.max(p.from, c[0]), to: Math.min(p.to, c[1]), side: sd, title: 'Done on ' + showDay(r.day) + ': ' + name(p.layer) + ' · ' + showCh(p.from) + '–' + showCh(p.to) }); });
+        (r.program[sd] || []).forEach(p => { if (p.to > c[0] && p.from < c[1]) prog.push({ from: Math.max(p.from, c[0]), to: Math.min(p.to, c[1]), side: sd, title: 'Program of ' + showDay(r.next) + ': ' + name(p.layer) + ' · ' + showCh(p.from) + '–' + showCh(p.to) }); }); });
+      return stripSvg(range, r.sides, bars, outl, prog);
+    }).join('');
+    $('sc_legend').innerHTML = '<b style="font:700 18px var(--display);margin-right:6px">INDEX</b>' + r.layers.slice().reverse().map(l => '<span><i style="background:' + col(l.id) + '"></i>' + esc(l.name) + '</span>').join('') + '<span><i class="ol"></i>Done on ' + esc(showDay(r.day)) + '</span><span><i class="prog"></i>Program of ' + esc(showDay(r.next)) + '</span>';
+    $('sc_layers').innerHTML = r.stats.slice().reverse().map(s => '<div class="lrow"><div>' + esc(s.name) + '</div><div class="lbar"><span style="width:' + Math.min(100, s.pct || 0) + '%;background:' + col(s.id) + '"></span></div><div class="r"><b>' + (s.pct === null ? '–' : fmt(s.pct) + '%') + '</b><small>' + Object.keys(s.per).map(k => esc(k === 'Median' ? 'M' : k === 'LHS' ? 'L' : k === 'RHS' ? 'R' : k) + ' ' + fmt(s.per[k], 2)).join(' · ') + ' km' + (s.month ? ' · +' + fmt(s.month, 2) + ' this month' : '') + '</small></div></div>').join('') +
+      (r.sidesSet ? '' : '<p class="muted">The sides and their stretches are not set yet (Set-up → Sides &amp; widths): the per cent is of the whole road.</p>');
+  }
+  function stripSvg(range, sides, bars, outl, prog) {
+    const W = Math.max(300, $('sc_chart').clientWidth || 1000), L = 56, Wd = W - L - 6, lh = 30, top = 20, H = top + sides.length * (lh + 6) + 4, len = Math.max(1, range.to - range.from);
+    const x = v => L + (v - range.from) / len * Wd, wd = (a, b) => Math.max(1.5, x(b) - x(a)), y = s => top + sides.indexOf(s) * (lh + 6);
+    let g = '<svg class="strip" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(showCh(range.from)) + ' to ' + esc(showCh(range.to)) + '" style="margin-bottom:8px">';
+    for (let v = Math.ceil(range.from / 200) * 200; v <= range.to; v += 200) { const big = v % 1000 === 0; g += '<line x1="' + x(v) + '" x2="' + x(v) + '" y1="' + (top - (big ? 7 : 4)) + '" y2="' + (top - 1) + '" stroke="#8D99A3"/>' + (big ? '<text x="' + x(v) + '" y="' + (top - 9) + '" font-size="11" text-anchor="' + (x(v) - L < 24 ? 'start' : L + Wd - x(v) < 24 ? 'end' : 'middle') + '" fill="#3B4650">' + showCh(v) + '</text>' : ''); }
+    sides.forEach(s => { g += '<text x="' + (L - 6) + '" y="' + (y(s) + lh / 2 + 4) + '" text-anchor="end" font-size="11" font-weight="700" fill="#3B4650">' + esc(s) + '</text><rect x="' + L + '" y="' + y(s) + '" width="' + Wd + '" height="' + lh + '" fill="#fff" stroke="#3B4650" stroke-width=".8"/>'; });
+    bars.forEach(b => { if (sides.indexOf(b.side) > -1) g += '<rect x="' + x(b.from) + '" y="' + (y(b.side) + 1) + '" width="' + wd(b.from, b.to) + '" height="' + (lh - 2) + '" fill="' + b.fill + '"><title>' + esc(b.title) + '</title></rect>'; });
+    outl.forEach(b => { if (sides.indexOf(b.side) > -1) g += '<rect x="' + x(b.from) + '" y="' + (y(b.side) + 2) + '" width="' + wd(b.from, b.to) + '" height="' + (lh - 4) + '" fill="none" stroke="#111" stroke-width="2.2"><title>' + esc(b.title) + '</title></rect>'; });
+    prog.forEach(b => { if (sides.indexOf(b.side) > -1) g += '<rect x="' + x(b.from) + '" y="' + (y(b.side) - 1) + '" width="' + wd(b.from, b.to) + '" height="' + (lh + 2) + '" fill="none" stroke="#E0A800" stroke-width="2.2" stroke-dasharray="6 4"><title>' + esc(b.title) + '</title></rect>'; });
+    return g + '</svg>';
+  }
+
+  /* ================= ALL REPORTS ================= */
+  LOAD.allreports = async () => {
+    if (!$('ar_to').value) { $('ar_to').value = S.today; $('ar_from').value = addDays(S.today, -29); }
+    const R1 = $('ar_from').value, R2 = $('ar_to').value;
+    $('ar_rows').innerHTML = '<tr><td class="empty">…</td></tr>';
+    const r = await eng({ action: 'grid', from: addDays(R1, -1), to: addDays(R2, -1) }); S.ar = r;
+    $('ar_head').innerHTML = '<tr><th>Report date</th>' + r.works.map(w => '<th>' + esc(w.name) + '</th>').join('') + '<th>Reports</th></tr>';
+    $('ar_rows').innerHTML = r.rows.map(row => { const R = addDays(row.day, 1);
+      return '<tr><td><b>' + esc(showDay(R)) + '</b><br><span class="muted">' + esc(wday(R)) + '</span><br><small class="muted">work of ' + esc(showDay(row.day)) + '</small></td>' + r.works.map(w => { const c = row.cells[w.item];
+        if (!c) return '<td class="muted">–</td>';
+        let h = c.senders.map(s => '<button type="button" class="rcell' + (s.late ? ' late' : '') + '" data-view="' + esc(s.email) + '" data-day="' + row.day + '"><b>✓ ' + esc(hm(s.at)) + '</b>' + (dayOf(s.at) !== R ? ' <small class="muted">' + esc(showDay(dayOf(s.at))) + '</small>' : '') + '<br>' + (c.pct === null ? '<span class="muted">outside the plan</span>' : c.pct + '%') + '<br><small>' + esc(s.name) + (s.edits ? ' ✎' : '') + '</small></button>').join('<br>');
+        if (c.missing.length) h += (h ? '<br>' : '') + '<span class="rmiss">✗ missing</span><br><small class="muted">' + c.missing.map(m => esc(m.name)).join(', ') + '</small>';
+        return '<td>' + h + '</td>'; }).join('') + '<td>' + row.sent + ' / ' + row.due + '</td></tr>'; }).join('') || '<tr><td class="empty">No reports.</td></tr>';
+  };
+  $('ar_go').addEventListener('click', () => { if ($('ar_from').value > $('ar_to').value) { toast('"From" must be before "to".', true); return; } LOAD.allreports().catch(failed); });
+  $('ar_rows').addEventListener('click', e => { const b = e.target.closest('[data-view]'); if (b) viewReport(b.dataset.view, b.dataset.day); });
+
+  /* ================= REPORTS (daily / weekly / 15 days / monthly) ================= */
+  function period(kind, d) {
+    if (kind === 'week') return { from: addDays(d, -6), to: d, name: 'Weekly report' };
+    if (kind === '15') return { from: addDays(d, -14), to: d, name: '15-day report' };
+    if (kind === 'month') { const f = d.slice(0, 8) + '01', last = addDays(addDays(f, 32).slice(0, 8) + '01', -1); return { from: f, to: last, name: 'Monthly report – ' + MONTH[dt(d).getUTCMonth()] + ' ' + dt(d).getUTCFullYear() }; }
+    return { from: d, to: d, name: 'Daily report' };
+  }
+  LOAD.reports = async () => {
+    if (!$('rp_day').value) $('rp_day').value = addDays(S.today, -1);
+    $('rp_day').max = S.today;
+    const p = period(S.rp.kind, $('rp_day').value);
+    $('rp_title').textContent = p.name; $('rp_sub').textContent = 'Work ' + (p.from === p.to ? 'of ' + longDay(p.from) : 'from ' + longDay(p.from) + ' to ' + longDay(p.to)) + ' · ' + (S.me.siteName || S.me.site);
+    $('rp_rows').innerHTML = '<tr><td colspan="6" class="empty">…</td></tr>';
+    const r = await eng({ action: 'report', from: p.from, to: p.to }); S.rp.data = r;
+    const m = r.works.filter(w => w.unit === 'm'), pl = m.reduce((a, w) => a + w.planned, 0), dn = m.reduce((a, w) => a + w.done, 0), ou = m.reduce((a, w) => a + w.outside, 0);
+    $('rp_tiles').innerHTML = '<div class="tile"><small>Planned</small><b>' + fmt(pl, 0) + '</b><i>m</i></div><div class="tile"><small>Done against the plan</small><b>' + fmt(dn, 0) + '</b><i>m</i><span>' + pct(dn, pl) + '% of plan</span></div><div class="tile"><small>Outside the plan</small><b>' + fmt(ou, 0) + '</b><i>m</i></div><div class="tile"><small>Reports</small><b>' + r.reports.sent + '</b><i>/ ' + r.reports.due + '</i><span>sent / due</span></div>';
+    $('rp_rows').innerHTML = r.works.map(w => '<tr><td class="nm" style="border-left:5px solid ' + workColour(w.item) + '">' + esc(w.name) + '<small>' + esc(w.unit) + '</small></td><td class="n">' + fmt(w.planned) + '</td><td class="n">' + fmt(w.done) + '</td><td class="n"><b>' + (w.planned > 0 ? w.pct + '%' : '–') + '</b></td><td class="n">' + fmt(w.outside) + '</td><td class="wrap">' +
+      w.people.map(p => esc(p.name) + ' <small style="display:inline">' + fmt(p.done) + ' / ' + fmt(p.planned) + (p.planned > 0 ? ' · ' + p.pct + '%' : '') + (p.outside ? ' · +' + fmt(p.outside) : '') + ' · ' + p.days + ' day' + (p.days > 1 ? 's' : '') + '</small>').join('<br>') + '</td></tr>').join('') || '<tr><td colspan="6" class="empty">No work in this period.</td></tr>';
+    const rs = r.works.filter(w => w.reasons.length);
+    $('rp_reasons').innerHTML = rs.length ? rs.map(w => '<h3>' + esc(w.name) + '</h3>' + w.reasons.map(x => '<div class="readline">' + esc(x.text) + ' <span class="muted">· ' + x.times + ' time' + (x.times > 1 ? 's' : '') + (x.left ? ' · ' + fmt(x.left) + ' ' + esc(w.unit) + ' left' : '') + '</span></div>').join('')).join('') : '<div class="muted">No reasons – nothing was left.</div>';
+    const days = []; for (let d = p.from; d <= p.to && d <= S.today; d = addDays(d, 1)) days.push(d);
+    $('rp_dhead').innerHTML = '<tr><th>Day</th>' + r.works.map(w => '<th class="n">' + esc(w.name) + '<br><small>' + esc(w.unit) + '</small></th>').join('') + '</tr>';
+    $('rp_days').innerHTML = days.slice().reverse().map(d => '<tr><td>' + esc(showDay(d)) + ' <small style="display:inline">' + esc(wday(d).slice(0, 3)) + '</small></td>' + r.works.map(w => { const x = w.days.find(y => y.day === d); return '<td class="n">' + (x ? fmt(x.done + x.outside) + (x.planned ? ' <small style="display:inline">/ ' + fmt(x.planned) + '</small>' : '') : '<span class="muted">–</span>') + '</td>'; }).join('') + '</tr>').join('');
+  };
+  $('rp_kind').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (!b) return; S.rp.kind = b.dataset.k; $('rp_kind').querySelectorAll('[data-k]').forEach(x => x.setAttribute('aria-selected', String(x === b))); LOAD.reports().catch(failed); });
+  $('rp_day').addEventListener('change', () => LOAD.reports().catch(failed));
+  $('rp_print').addEventListener('click', () => window.print());
+
+  /* ================= PERFORMANCE (who reported) ================= */
+  LOAD.perf = async () => {
+    if (!$('pf_month').value) $('pf_month').value = S.today.slice(0, 7);
+    const mo = $('pf_month').value, from = mo + '-01', last = addDays(addDays(from, 32).slice(0, 8) + '01', -1), to = last < S.today ? last : S.today;
+    if (from > S.today) { toast('Pick this month or one before.', true); return; }
+    $('pf_sub').textContent = MONTH[dt(from).getUTCMonth()] + ' ' + dt(from).getUTCFullYear() + ' · people move between works – every report keeps the name of whoever sent it';
+    $('pf_cards').innerHTML = '<div class="empty">…</div>';
+    const r = await eng({ action: 'perf', from: from, to: to }); S.pf = r;
+    $('pf_cards').innerHTML = r.people.map(p => '<div class="pcard"><div class="ini">' + esc(ini(p.name)) + '</div><div><h3>' + esc(p.name) + '</h3><p>' + p.sent + ' report' + (p.sent === 1 ? '' : 's') + ' sent of ' + p.due + (p.missing ? ' · <span class="st-No">' + p.missing + ' missing</span>' : '') + (p.edits ? ' · ' + p.edits + ' correction' + (p.edits > 1 ? 's' : '') : '') + (p.late ? ' · ' + p.late + ' late' : '') + (p.last ? ' · last ' + esc(when(p.last)) : '') + '</p>' +
+      (p.planned > 0 ? '<p><b style="color:var(--ink)">' + p.pct + '%</b> of his plan done · ' + fmt(p.done) + ' / ' + fmt(p.planned) + ' m' + (p.outside ? ' · +' + fmt(p.outside) + ' m outside the plan' : '') + '</p>' : '') +
+      '<div>' + Object.keys(p.works).map(k => '<span class="chip">' + esc(k) + ' ' + p.works[k] + '</span>').join('') + '</div></div></div>').join('') || '<div class="empty">Nobody had a report to send in this month.</div>';
+    $('pf_mhead').innerHTML = '<tr><th>Work</th>' + r.days.map(d => '<th>' + dt(d).getUTCDate() + '</th>').join('') + '</tr>';
+    $('pf_mrows').innerHTML = r.works.map(w => '<tr><td>' + esc(w.name) + '</td>' + r.days.map(d => { const c = w.days[d]; if (!c) return '<td></td>';
+      return '<td title="' + esc(showDay(d) + ': ' + c.senders.join(', ') + (c.missing.length ? ' · missing: ' + c.missing.join(', ') : '')) + '">' + c.senders.map(n => '<span class="muted">' + esc(ini(n)) + '</span>').join(' ') + (c.missing.length ? ' <span class="dot">•</span>' : '') + '</td>'; }).join('') + '</tr>').join('') || '<tr><td class="empty">–</td></tr>';
+  };
+  $('pf_month').addEventListener('change', () => LOAD.perf().catch(failed));
+
+  /* ================= SET-UP (the Super Admin) ================= */
+  LOAD.setup = async () => { await loadInit(); suTab(S.su.tab); };
+  const KIND_NAME = { side: 'Sides & widths', work: 'Works & layers', mix: 'Mix designs', design: 'Designs' };
+  const KIND_P = { side: 'Each side of the road (LHS, Median, RHS) on a stretch of chainage, with its width. Period by period: a new period from a date keeps the past as it was.',
+    work: 'The works and their layers (with the thickness of each layer). Order = which work lies above which in the strip chart (a higher number is a higher layer). A work in metres can be shown in the strip chart.',
+    mix: 'A mix design: what goes into one unit (e.g. per cum). Saved = it applies from its "valid from" date.', design: 'A design (e.g. dowel bar, tie bar): its sizes. Saved = it applies from its "valid from" date.' };
+  function suTab(t) {
+    S.su.tab = t; document.querySelectorAll('#su_tabs [data-t]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === t)));
+    $('su_road').hidden = t !== 'road'; $('su_people').hidden = t !== 'people'; $('su_master').hidden = ['side', 'work', 'mix', 'design'].indexOf(t) === -1;
+    $('ms_form').hidden = true;
+    if (t === 'road') drawRoad(); else if (t === 'people') drawPeople(); else drawMasters(t);
+  }
+  $('su_tabs').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) suTab(b.dataset.t); });
+  // ---- the road from the KML ----
+  function drawRoad() {
+    const r = S.road;
+    $('rd_now').innerHTML = r ? '<p style="margin:4px 0"><b style="color:var(--ink)">' + esc(r.name) + '</b> · ' + esc(showCh(r.ch_from)) + ' to ' + esc(showCh(r.ch_to)) + ' (' + fmt((r.ch_to - r.ch_from) / 1000, 3) + ' km)' + (r.source ? ' · from ' + esc(r.source) : '') + ' · set ' + esc(when(r.updated_at)) + ' by ' + esc(r.updated_by) + '</p>' : '<p style="margin:4px 0">No road yet: choose the KML of the road (with its chainages, e.g. ACAD-PN-II-18B_WITH_CHAINAGES.kml).</p>';
+    $('rd_pick').textContent = r ? 'Choose a new KML file' : 'Choose the KML file';
+    $('rd_new').hidden = !S.rd;
+  }
+  $('rd_pick').addEventListener('click', () => { $('rd_file').value = ''; $('rd_file').click(); });
+  $('rd_file').addEventListener('change', async () => {
+    const f = $('rd_file').files[0]; if (!f) return;
+    try {
+      const text = await f.text(), k = window.RclKml.parse(text);
+      S.rd = { k: k, source: f.name };
+      $('rd_name').value = (S.road && S.road.name) || k.name || f.name.replace(/\.kml$/i, '');
+      $('rd_info').innerHTML = '<p><b>' + esc(showCh(k.from)) + ' to ' + esc(showCh(k.to)) + '</b> · ' + fmt((k.to - k.from) / 1000, 3) + ' km of chainage · ' + k.stations.length + ' points (one every ' + fmt((k.to - k.from) / Math.max(1, k.stations.length - 1), 0) + ' m) · the line measures ' + fmt(k.along / 1000, 3) + ' km</p>' + (S.road ? '<p class="tag warn" style="display:inline-block">This replaces the road set now (' + esc(showCh(S.road.ch_from)) + ' to ' + esc(showCh(S.road.ch_to)) + ').</p>' : '');
+      $('rd_new').hidden = false;
+    } catch (e) { toast(e.message, true); }
+  });
+  $('rd_cancel').addEventListener('click', () => { S.rd = null; $('rd_new').hidden = true; });
+  $('rd_save').addEventListener('click', async e => {
+    const b = e.target; if (b.disabled || !S.rd) return; b.disabled = true;
+    try { const r = await eng({ action: 'roadSave', name: $('rd_name').value, stations: S.rd.k.stations, source: S.rd.source }); S.road = Object.assign({}, S.road, r.road); S.rd = null; toast('Road saved: ' + r.points + ' points.'); drawRoad(); }
+    catch (er) { failed(er); } finally { b.disabled = false; }
+  });
+  // ---- the masters: every period of every item ----
+  function mastHead(kind) {
+    const H = { side: ['Code', 'Side', 'From', 'To', 'Width (m)'], work: ['Code', 'Work', 'Unit', 'Layers', 'Sides', 'Strip chart', 'Order'], mix: ['Code', 'Mix design', 'Grade', 'Per', 'Lines'], design: ['Code', 'Design', 'Lines'] }[kind];
+    return '<tr>' + H.map(x => '<th>' + esc(x) + '</th>').join('') + '<th>Valid</th><th>Status</th><th></th></tr>';
+  }
+  function mastCells(r, first) {
+    const d = r.data, code = first ? '<b>' + esc(r.item) + '</b>' : '<small class="muted">' + esc(r.item) + '</small>';
+    if (r.kind === 'side') return '<td>' + code + '</td><td><b>' + esc(d.name) + '</b></td><td>' + esc(showCh(d.from)) + '</td><td>' + esc(showCh(d.to)) + '</td><td class="n">' + fmt(d.width, 2) + '</td>';
+    if (r.kind === 'work') return '<td>' + code + '</td><td class="nm">' + esc(d.name) + (d.note ? '<small>' + esc(d.note) + '</small>' : '') + '</td><td>' + esc(d.unit) + '</td><td class="wrap">' + (d.layers.map(l => esc(l.name) + (l.mm ? ' <small style="display:inline">' + l.mm + ' mm</small>' : '')).join(', ') || '<span class="muted">–</span>') + '</td><td>' + (d.sides.length ? d.sides.map(esc).join(', ') : '<span class="muted">all</span>') + '</td><td>' + (d.strip && d.unit === 'm' ? 'Yes' : '<span class="muted">No</span>') + '</td><td class="n">' + d.sort + '</td>';
+    if (r.kind === 'mix') return '<td>' + code + '</td><td class="nm">' + esc(d.name) + '</td><td>' + esc(d.grade) + '</td><td>' + esc(d.per) + '</td><td class="n">' + d.rows.length + '</td>';
+    return '<td>' + code + '</td><td class="nm">' + esc(d.name) + '</td><td class="n">' + d.rows.length + '</td>';
+  }
+  function drawMasters(kind) {
+    $('ms_h').textContent = KIND_NAME[kind]; $('ms_p').textContent = KIND_P[kind];
+    $('ms_new').textContent = { side: '+ Add stretch', work: '+ Add work', mix: '+ Add mix design', design: '+ Add design' }[kind];
+    $('ms_head').innerHTML = mastHead(kind);
+    const rows = S.masters.filter(r => r.kind === kind), items = [...new Set(rows.map(r => r.item))].sort();
+    const ncol = { side: 5, work: 7, mix: 5, design: 3 }[kind] + 3;
+    $('ms_rows').innerHTML = items.map(it => {
+      const vs = rows.filter(r => r.item === it).sort((a, b) => b.valid_from.localeCompare(a.valid_from));
+      return vs.map((r, i) => { const now = r.valid_from <= S.today && (!r.valid_to || r.valid_to >= S.today);
+        return '<tr class="' + (i ? 'ver' : '') + (r.active ? '' : ' off') + '" data-id="' + r.id + '">' + mastCells(r, i === 0) + '<td class="wrap" style="min-width:130px">' + esc(showDay(r.valid_from)) + ' ' + dt(r.valid_from).getUTCFullYear() + ' – ' + (r.valid_to ? esc(showDay(r.valid_to)) + ' ' + dt(r.valid_to).getUTCFullYear() : 'onwards') + (now ? ' <span class="tag blue">now</span>' : '') + '</td><td><span class="tag' + (r.active ? '' : ' off') + '">' + (r.active ? 'Active' : 'Inactive') + '</span></td>' +
+          '<td><div class="acts"><button type="button" class="link m-edit">Edit</button>' + (i === 0 ? '<button type="button" class="link m-period">New period</button>' : '') + '<button type="button" class="link m-act">' + (r.active ? 'Make inactive' : 'Make active') + '</button></div></td></tr>'; }).join('');
+    }).join('') || '<tr><td colspan="' + ncol + '" class="empty">Nothing yet – press "' + esc($('ms_new').textContent) + '".</td></tr>';
+  }
+  $('ms_new').addEventListener('click', () => openMaster(S.su.tab, 'new', null));
+  $('ms_rows').addEventListener('click', async e => {
+    const tr = e.target.closest('tr[data-id]'); if (!tr) return; const r = S.masters.find(x => x.id === Number(tr.dataset.id)); if (!r) return;
+    if (e.target.classList.contains('m-edit')) openMaster(r.kind, 'edit', r);
+    if (e.target.classList.contains('m-period')) openMaster(r.kind, 'period', r);
+    if (e.target.classList.contains('m-act')) {
+      const on = !r.active, v = await ask((on ? 'Make active: ' : 'Make inactive: ') + (r.data.name || r.item), '<p>' + esc(r.item) + ' · ' + esc(showDay(r.valid_from)) + ' – ' + (r.valid_to ? esc(showDay(r.valid_to)) : 'onwards') + '</p><p class="mr">' + (on ? 'हे पुन्हा चालू (Active) होईल.' : 'हे बंद (Inactive) होईल – आधीचे reports तसेच राहतील.') + '</p>', [{ label: 'Cancel', value: false }, { label: on ? 'Make active' : 'Make inactive', value: true, primary: true }]);
+      if (!v) return;
+      try { await eng({ action: 'masterActive', id: r.id, active: on }); toast('Saved.'); await loadInit(); drawMasters(r.kind); } catch (er) { failed(er); }
+    }
+  });
+  function rowsHtml(rows, three) { return '<div class="rows" id="mf_rows">' + (rows.length ? rows : [{}]).map(x => rowLine(x, three)).join('') + '</div><button type="button" class="btn small" id="mf_addrow">+ Add line</button>'; }
+  const rowLine = (x, three) => three
+    ? '<div class="r l3"><input class="rw-label" placeholder="Name (e.g. Layer 1)" maxlength="60" value="' + esc(x.name || '') + '" data-key="' + esc(x.key || '') + '"><input class="rw-mm" type="number" min="0" step="any" placeholder="Thickness (mm)" value="' + esc(x.mm === null || x.mm === undefined ? '' : x.mm) + '"><button type="button" class="link del rw-del">Remove</button></div>'
+    : '<div class="r"><input class="rw-label" placeholder="What (e.g. Cement)" maxlength="80" value="' + esc(x.label || '') + '"><input class="rw-value" placeholder="How much" maxlength="40" value="' + esc(x.value || '') + '"><input class="rw-unit" placeholder="Unit (kg)" maxlength="20" value="' + esc(x.unit || '') + '"><button type="button" class="link del rw-del">Remove</button></div>';
+  function openMaster(kind, mode, r) {
+    S.mf = { kind: kind, mode: mode, r: r };
+    const d = r ? r.data : {};
+    $('mf_h').textContent = (mode === 'new' ? 'Add – ' : mode === 'edit' ? 'Edit ' + r.item + ' – ' : 'New period of ' + r.item + ' – ') + KIND_NAME[kind].replace(/s( &|$)/, '$1');
+    let h = mode === 'period' ? '<p class="tag warn" style="display:inline-block">The period running on "valid from" ends the day before it; the past stays as it was.</p>' : '';
+    if (kind === 'side') {
+      const names = ['LHS', 'Median', 'RHS'];
+      h += '<div class="grid"><div class="field"><label for="mf_name">Side *</label><input id="mf_name" list="dl_sides" maxlength="30" value="' + esc(d.name || '') + '"><datalist id="dl_sides">' + names.map(n => '<option value="' + n + '">').join('') + '</datalist></div>' +
+        '<div class="field"><label for="mf_cfrom">Chainage from *</label><input id="mf_cfrom" placeholder="' + esc(S.road ? showCh(S.road.ch_from) : '8+000') + '" value="' + esc(d.from !== undefined ? showCh(d.from) : '') + '"></div>' +
+        '<div class="field"><label for="mf_cto">Chainage to *</label><input id="mf_cto" placeholder="' + esc(S.road ? showCh(S.road.ch_to) : '61+055') + '" value="' + esc(d.to !== undefined ? showCh(d.to) : '') + '"></div>' +
+        '<div class="field"><label for="mf_width">Width (m) *</label><input id="mf_width" type="number" min="0" step="any" value="' + esc(d.width || '') + '"></div>' +
+        '<div class="field wide"><label for="mf_note">Note</label><input id="mf_note" maxlength="300" value="' + esc(d.note || '') + '"></div></div>';
+    } else if (kind === 'work') {
+      const sides = ['LHS', 'Median', 'RHS'].concat(S.masters.filter(x => x.kind === 'side').map(x => x.data.name)).filter((x, i, a) => a.indexOf(x) === i);
+      h += '<div class="grid"><div class="field wide"><label for="mf_name">Work *</label><input id="mf_name" list="dl_worknames" maxlength="80" value="' + esc(d.name || '') + '" placeholder="e.g. Embankment"></div>' +
+        '<div class="field"><label for="mf_unit">Unit</label><select id="mf_unit">' + ['m', 'Nos', 'sq m', 'cum'].map(u => '<option' + ((d.unit || 'm') === u ? ' selected' : '') + '>' + u + '</option>').join('') + '</select></div>' +
+        '<div class="field"><label for="mf_sort">Order (strip chart)</label><input id="mf_sort" type="number" min="0" max="999" value="' + esc(d.sort === undefined ? 100 : d.sort) + '"></div></div>' +
+        '<div class="field"><span class="lbl">Done on the sides (none ticked = every side)</span><div class="checks" id="mf_sides">' + sides.map(sd => '<label><input type="checkbox" value="' + esc(sd) + '"' + ((d.sides || []).indexOf(sd) > -1 ? ' checked' : '') + '> ' + esc(sd) + '</label>').join('') + '</div></div>' +
+        '<div class="field"><label class="checks"><label><input type="checkbox" id="mf_strip"' + (d.strip === false ? '' : ' checked') + '> Show in the strip chart (works in metres)</label></label></div>' +
+        '<div class="field"><span class="lbl">Layers (bottom first) and thickness</span>' + rowsHtml((d.layers || []), true) + '</div>' +
+        '<div class="field"><label for="mf_note">Note</label><input id="mf_note" maxlength="300" value="' + esc(d.note || '') + '"></div>';
+    } else {
+      h += '<div class="grid"><div class="field wide"><label for="mf_name">' + (kind === 'mix' ? 'Mix design' : 'Design') + ' *</label><input id="mf_name" maxlength="80" value="' + esc(d.name || '') + '" placeholder="' + (kind === 'mix' ? 'e.g. PQC M40' : 'e.g. Dowel bar') + '"></div>' +
+        (kind === 'mix' ? '<div class="field"><label for="mf_grade">Grade</label><input id="mf_grade" maxlength="40" value="' + esc(d.grade || '') + '" placeholder="e.g. M40"></div><div class="field"><label for="mf_per">Per</label><input id="mf_per" maxlength="30" value="' + esc(d.per || 'per cum') + '"></div>' : '') + '</div>' +
+        '<div class="field"><span class="lbl">' + (kind === 'mix' ? 'What goes in' : 'Sizes') + '</span>' + rowsHtml(d.rows || [], false) + '</div>' +
+        '<div class="field"><label for="mf_note">Note</label><input id="mf_note" maxlength="300" value="' + esc(d.note || '') + '"></div>';
+    }
+    $('mf_body').innerHTML = h;
+    $('mf_from').value = mode === 'edit' ? r.valid_from : mode === 'period' ? S.today : S.today;
+    $('mf_to').value = mode === 'edit' ? (r.valid_to || '') : '';
+    $('ms_form').hidden = false; $('ms_form').scrollIntoView({ block: 'nearest' });
+    setTimeout(() => { const f = $('mf_name'); if (f) f.focus(); }, 30);
+  }
+  $('mf_body').addEventListener('click', e => {
+    if (e.target.id === 'mf_addrow') { $('mf_rows').insertAdjacentHTML('beforeend', rowLine({}, S.mf.kind === 'work')); $('mf_rows').lastElementChild.querySelector('input').focus(); }
+    if (e.target.classList.contains('rw-del')) e.target.closest('.r').remove();
+  });
+  $('mf_cancel').addEventListener('click', () => { $('ms_form').hidden = true; S.mf = null; });
+  $('mf_save').addEventListener('click', async e => {
+    const b = e.target; if (b.disabled || !S.mf) return;
+    const k = S.mf.kind, v = id => ($(id) || {}).value || '';
+    let data;
+    if (k === 'side') data = { name: v('mf_name'), from: v('mf_cfrom'), to: v('mf_cto'), width: v('mf_width'), note: v('mf_note') };
+    else if (k === 'work') data = { name: v('mf_name'), unit: v('mf_unit'), sort: v('mf_sort'), sides: [...document.querySelectorAll('#mf_sides input:checked')].map(x => x.value), strip: $('mf_strip').checked, note: v('mf_note'),
+      layers: [...document.querySelectorAll('#mf_rows .r')].map(x => ({ key: x.querySelector('.rw-label').dataset.key || '', name: x.querySelector('.rw-label').value, mm: x.querySelector('.rw-mm').value })).filter(x => x.name.trim() || x.mm !== '') };
+    else data = { name: v('mf_name'), grade: v('mf_grade'), per: v('mf_per'), note: v('mf_note'), rows: [...document.querySelectorAll('#mf_rows .r')].map(x => ({ label: x.querySelector('.rw-label').value, value: x.querySelector('.rw-value').value, unit: x.querySelector('.rw-unit').value })) };
+    if (k === 'side') { const a = chain(data.from), c = chain(data.to); if (a !== null && !isNaN(a)) data.from = a; if (c !== null && !isNaN(c)) data.to = c; }
+    b.disabled = true;
+    try {
+      const r = await eng({ action: 'masterSave', kind: k, mode: S.mf.mode, id: S.mf.r ? S.mf.r.id : undefined, item: S.mf.r ? S.mf.r.item : undefined, data: data, valid_from: v('mf_from'), valid_to: v('mf_to') });
+      toast('Saved: ' + r.item + ' – it applies from ' + showDay(v('mf_from')) + '.'); $('ms_form').hidden = true; S.mf = null; await loadInit(); drawMasters(k);
+    } catch (er) { failed(er); } finally { b.disabled = false; }
+  });
+  // ---- people and their works ----
+  function drawPeople() {
+    const works = S.masters.filter(r => r.kind === 'work'), items = [...new Set(works.map(r => r.item))];
+    const ROLE = { super: 'Super Admin', admin: 'Admin', user: 'User' };
+    $('pp_rows').innerHTML = S.people.slice().sort((a, b) => String(a.name).localeCompare(String(b.name))).map(p => {
+      const mine = S.assign.filter(a => a.email === p.email && a.active).map(a => a.work);
+      return '<tr data-email="' + esc(p.email) + '"><td class="nm">' + esc(p.name || p.email) + '<small>' + esc(p.email) + '</small></td><td>' + esc(ROLE[p.role] || p.role) + '</td><td class="wrap">' + (mine.length ? mine.map(w => '<span class="chip"><i style="width:10px;height:10px;border-radius:3px;display:inline-block;background:' + workColour(w) + '"></i>' + esc(workName(w, S.today)) + '</span>').join('') : '<span class="muted">none</span>') + '</td><td>' + (p.last_seen ? esc(when(p.last_seen)) : '<span class="muted">not yet signed in</span>') + '</td><td><button type="button" class="link p-works"' + (items.length ? '' : ' disabled title="Add a work first"') + '>Give works</button></td></tr>';
+    }).join('') || '<tr><td colspan="5" class="empty">Nobody yet – people come here at their first sign-in, or press "+ Add person".</td></tr>';
+  }
+  $('pp_rows').addEventListener('click', async e => {
+    if (!e.target.classList.contains('p-works')) return;
+    const email = e.target.closest('tr').dataset.email, p = S.people.find(x => x.email === email), mine = S.assign.filter(a => a.email === email && a.active).map(a => a.work);
+    const on = itemsOn('work', S.today, true), items = Object.keys(on).sort((a, b) => on[a].data.sort - on[b].data.sort);
+    const v = await ask('Works of ' + (p.name || email), '<p class="muted">Tick every work he does (more than one is fine).</p><div class="checks" id="aw_list" style="flex-direction:column">' + items.map(w => '<label><input type="checkbox" value="' + esc(w) + '"' + (mine.indexOf(w) > -1 ? ' checked' : '') + '> ' + esc(on[w].data.name) + ' <small class="muted">' + esc(w) + (on[w].active ? '' : ' · inactive') + '</small></label>').join('') + '</div>', [{ label: 'Cancel', value: null }, { label: 'Save', value: 'save', primary: true }]);
+    if (v !== 'save') return;
+    const works = [...document.querySelectorAll('#aw_list input:checked')].map(x => x.value);
+    try { await eng({ action: 'assignSave', email: email, works: works }); toast('Saved: ' + works.length + ' work' + (works.length === 1 ? '' : 's') + ' for ' + (p.name || email) + '.'); await loadInit(); drawPeople(); } catch (er) { failed(er); }
+  });
+  // (the dialog's check boxes are read before it closes: the dialog keeps its html until the next one)
+  $('pp_new').addEventListener('click', async () => {
+    const v = await ask('Add person', '<div class="field"><label for="ap_name">Name *</label><input id="ap_name" maxlength="80"></div><div class="field"><label for="ap_email">Email (the one he signs in with) *</label><input id="ap_email" type="email" maxlength="120"></div><p class="muted">He also needs Engineering on this site in the Portal (Users &amp; Access) to sign in.</p>', [{ label: 'Cancel', value: null }, { label: 'Add', value: 'add', primary: true }]);
+    if (v !== 'add') return;
+    try { await eng({ action: 'personAdd', name: $('ap_name').value, email: $('ap_email').value }); toast('Added.'); await loadInit(); drawPeople(); } catch (er) { failed(er); }
+  });
+
+  /* ---------------- SEARCH FROM THE SCREEN AROUND IT (as every module: window.rclModule) ---------------- */
+  const LOADED = (() => { let ok; const p = new Promise(res => { ok = res; }); return { p: p, ok: () => ok() }; })();
+  const sNorm = v => String(v === null || v === undefined ? '' : v).toLowerCase().replace(/\s+/g, ' ').trim();
+  function sFind(q) {
+    const words = sNorm(q).split(' ').filter(Boolean); if (!words.length) return [];
+    const hit = t => words.every(w => sNorm(t).indexOf(w) > -1), out = [];
+    Object.keys(PAGES).filter(mayOpen).forEach(k => { if (hit(PAGES[k] + ' engineering')) out.push({ group: 'Pages', kind: 'page', title: PAGES[k], sub: 'Engineering', page: k }); });
+    const on = itemsOn('work', S.today, true);
+    Object.keys(on).forEach(k => { const w = on[k]; if (hit([w.item, w.data.name, w.data.layers.map(l => l.name).join(' ')].join(' '))) out.push({ group: 'Works', kind: 'work', title: w.data.name, sub: [w.item, w.data.unit, w.data.layers.map(l => l.name).join(', ')].filter(Boolean).join('  |  '), page: canView() ? 'reports' : 'strip', find: w.item }); });
+    if (canView()) S.people.forEach(p => { if (hit(p.name + ' ' + p.email)) out.push({ group: 'People', kind: 'person', title: p.name || p.email, sub: p.email, page: 'mywork', find: p.email }); });
+    return out.slice(0, 8);
+  }
+  window.rclModule = {
+    key: 'engineering',
+    async search(q) { await Promise.race([LOADED.p, new Promise(res => setTimeout(res, 8000))]); return S.me ? sFind(q) : []; },
+    open(page, find) { if (page === 'mywork' && find && canView()) { S.mw.email = find === S.me.user.email ? '' : find; } go(PAGES[page] ? page : 'mywork'); },
+  };
+
+  start();
+})();
+</script>
+</body>
+</html>
