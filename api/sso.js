@@ -1,5 +1,7 @@
 /* POST /api/sso { ticket } – the Portal sent the person here: the ticket is checked (lib/portal.js), used ONCE (its number is
- * written into eng_tickets), the person is noted on the site's list of people, and an Engineering sign-in for that site starts. */
+ * written into eng_tickets), the person is noted on the site's list of people, and an Engineering sign-in for that site starts.
+ * { ticket, renew: 1 } (23-10-2026): the open page's fresh ticket every 10 minutes – the sign-in it had is replaced (its row goes);
+ * the same person on the same site with the same role is not written in the list of people or the activity record again. */
 'use strict';
 const { handler, readBody, send, sameSite, fail } = require('../lib/http');
 const portal = require('../lib/portal');
@@ -18,11 +20,16 @@ module.exports = handler(async (req, res) => {
     throw e;
   }
   if (Math.random() < 0.05) { const old = new Date(Date.now() - 86400000).toISOString(); db('DELETE', 'eng_tickets?expires_at=lt.' + old, undefined, 'return=minimal').catch(() => {}); db('DELETE', 'eng_sessions?expires_at=lt.' + old, undefined, 'return=minimal').catch(() => {}); }
+  let old = null; try { old = await ses.read(req); } catch (e) { old = null; }
+  const again = !!x.renew && !!old && old.site === c.site && String(old.email).toLowerCase() === String(c.email).toLowerCase() && old.role === c.role;
   // the people of the site: who signed in (name and role as the Portal says them now)
-  const now = new Date().toISOString();
-  const had = ((await db('GET', 'eng_people?select=email,first_seen&site=eq.' + encodeURIComponent(c.site) + '&email=eq.' + encodeURIComponent(c.email))) || [])[0];
-  await db('POST', 'eng_people?on_conflict=site,email', [{ site: c.site, email: c.email, name: c.name, role: c.role, first_seen: (had && had.first_seen) || now, last_seen: now }], 'resolution=merge-duplicates,return=minimal');
+  if (!again) {
+    const now = new Date().toISOString();
+    const had = ((await db('GET', 'eng_people?select=email,first_seen&site=eq.' + encodeURIComponent(c.site) + '&email=eq.' + encodeURIComponent(c.email))) || [])[0];
+    await db('POST', 'eng_people?on_conflict=site,email', [{ site: c.site, email: c.email, name: c.name, role: c.role, first_seen: (had && had.first_seen) || now, last_seen: now }], 'resolution=merge-duplicates,return=minimal');
+  }
   const cookie = await ses.create(req, c);
-  await activity(c.site, c.email, 'Sign-in', c.site, { role: c.role });
+  if (old) { try { await db('DELETE', 'eng_sessions?id_hash=eq.' + encodeURIComponent(old.idHash), undefined, 'return=minimal'); } catch (e) { /* it ends by itself in 15 minutes */ } }
+  if (!again) await activity(c.site, c.email, 'Sign-in', c.site, { role: c.role });
   send(res, 200, { ok: true, preview: isPreview() || undefined, user: { email: c.email, name: c.name, role: c.role }, site: c.site, siteName: c.siteName, mods: c.mods, sites: c.sites, portal: portal.url() }, { 'Set-Cookie': cookie });
 });

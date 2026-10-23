@@ -5,6 +5,10 @@ Admin), each person's daily plan and report, the dashboard, the strip chart, all
 
 * **Sign-in only through the Portal.** The Portal sends the person here with a one-minute signed ticket (role: Super Admin,
   Engineering Admin or Engineering User of that site). Nobody signs in here.
+* **A sign-in lasts 15 minutes** (23-10-2026; it was 12 hours): the open page asks the Portal for a fresh ticket every 10 minutes
+  (`/api/go?…&json=1&renew=1` → `api/sso` with `renew`) and signs in again by itself. Whom the Super Admin removes in the Portal is
+  out within 15 minutes ("You no longer have Engineering on this site"); a new role shows at the next renewal. Rig test:
+  `test/renew.test.js` (one-address mode).
 * **One database for every site** (the Supabase project `rcl-engineering`). Every row carries its site; VTR's work is never seen
   at 18B. **Change site** at the top of the dark menu goes to another of his sites through the Portal.
 
