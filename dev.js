@@ -7,7 +7,7 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '
 http.createServer((req, res) => {
   let p = new URL(req.url, 'http://x').pathname;
   if (p === '/menu.json') p = '/api/menu';
-  const m = /^\/api\/([a-z]+)$/.exec(p);
+  const m = /^\/api\/([a-z][a-z-]*)$/.exec(p);
   if (m) { const f = path.join(__dirname, 'api', m[1] + '.js'); if (fs.existsSync(f)) return require(f)(req, res); res.statusCode = 404; return res.end('{"error":"Not found."}'); }
   const file = path.join(__dirname, 'public', p === '/' ? 'index.html' : path.normalize(p).replace(/^(\.\.[/\\])+/, ''));
   if (!file.startsWith(path.join(__dirname, 'public')) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.statusCode = 404; return res.end('Not found'); }
