@@ -92,11 +92,14 @@ timeout 300 node test/cache155.test.js        # rig: the site's set-up read once
 ```
 
 ## Fewer reads, no second copy (24-10-2026, with Mechanical's update-155)
-* **What the site has set up** (masters, road, who does which work, people – at least 4 reads) is read once for the looks of
-  15 seconds (`api/eng.js` `ctxFor` – a copy per request, per site). Every save reads it afresh, as before, and empties the copy.
+* **What the site has set up** (masters, road, who does which work, people – at least 4 reads) is read once for the looks that
+  come within 2 seconds of each other – a page that opens asks several at once (`api/eng.js` `ctxFor` – a copy per request, per
+  site; 2 seconds, so another person's save shows within the owner's 2 seconds). Every save reads it afresh, as before, and its
+  end drops the shared read.
 * **The looks answer "the same" / only what changed** to the page (`lib/delta.js` – the same file as Mechanical's; `lib/http.js`
   `sendKept`; the page's `look`): kept in the page's memory only, checked against the server's fingerprint, emptied at every
   sign-in and sign-out.
 * **A new row is not sent twice:** after no answer at all from the database it may have been saved – the person is told to look
-  (no second copy); a change or a delete is asked again as before.
+  (no second copy); a change or a delete is asked again as before, and so is a new row that never left this server (no
+  connection at all).
 * **A tab in the background does not renew the sign-in;** the reminder is asked only from 9 to 20 h (was all night too).

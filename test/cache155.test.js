@@ -1,5 +1,6 @@
 /* (24-10-2026, Mechanical's update-155 – the audit's R3 and P6) on the local test rig only (never a live database):
- *   – what the site has set up (masters, road, who does which work, people) is read once for several looks within 15 seconds,
+ *   – what the site has set up (masters, road, who does which work, people) is read once for looks that come together (a page that
+ *     opens), within 2 seconds,
  *     never for a save: a save – and the first look after it – reads it afresh;
  *   – a site's copy is never used for another site;
  *   – a write whose answer is lost (the database DID it) is not sent a second time: one master, and the person is told to look.
@@ -46,9 +47,9 @@ const IST = 330 * 60000, TODAY = new Date(Date.now() + IST).toISOString().slice(
     const w = await SA.eng({ action: 'masterSave', kind: 'work', mode: 'new', valid_from: TODAY, data: { name: 'GSB', sort: 40, layers: [{ name: 'Layer 1', mm: 100 }] } });
     ok('a work saved on S1 (GSB)', w.status === 200 && w.j.item === 'W-001', w.j);
     await meter(true);
-    const looks = []; for (let k = 0; k < 5; k++) looks.push(await AD.eng({ action: 'init' }));
+    const looks = await Promise.all([0, 1, 2, 3, 4].map(() => AD.eng({ action: 'init' })));      // as a page that opens asks
     const m1 = await meter(true);
-    ok('5 looks at S1 within 15 seconds: what the site has set up is read once (was 5 times)', looks.every(x => x.status === 200) && reads(m1, 'eng_masters') === 1 && reads(m1, 'eng_assign') === 1, { masters: reads(m1, 'eng_masters'), assign: reads(m1, 'eng_assign') });
+    ok('5 looks at S1 at once: what the site has set up is read once (was 5 times)', looks.every(x => x.status === 200) && reads(m1, 'eng_masters') === 1 && reads(m1, 'eng_assign') === 1, { masters: reads(m1, 'eng_masters'), assign: reads(m1, 'eng_assign') });
     ok('   and every look has the work', looks.every(x => (x.j.masters || []).some(mm => mm.item === 'W-001')));
     const t2 = await AT.eng({ action: 'init' });
     ok('T2 is asked for its own: it does not get S1\'s work', t2.status === 200 && !(t2.j.masters || []).length, (t2.j.masters || []).map(mm => mm.item));
@@ -58,11 +59,11 @@ const IST = 330 * 60000, TODAY = new Date(Date.now() + IST).toISOString().slice(
     ok('a save reads what the site has set up afresh (not the copy)', w2.status === 200 && w2.j.item === 'W-002' && reads(m2, 'eng_masters') === 1, { item: w2.j.item, reads: reads(m2, 'eng_masters') });
     const after = await AD.eng({ action: 'init' });
     ok('   the first look after the save shows it at once', (after.j.masters || []).some(mm => mm.item === 'W-002'), (after.j.masters || []).map(mm => mm.item));
-    // a change straight in the database (another server's save): seen within 15 seconds
+    // a change straight in the database (another server's save): seen within 2 seconds
     sql('rcl_eng', "update eng_masters set data = jsonb_set(data, '{name}', '\"WMM Changed\"') where item = 'W-002'");
-    await wait(15500);
+    await wait(2100);
     const later = await AD.eng({ action: 'init' });
-    ok('a change made by another server: seen within 15 seconds', (later.j.masters || []).some(mm => mm.item === 'W-002' && mm.data.name === 'WMM Changed'), (later.j.masters || []).map(mm => mm.data && mm.data.name));
+    ok('a change made by another server: seen within 2 seconds', (later.j.masters || []).some(mm => mm.item === 'W-002' && mm.data.name === 'WMM Changed'), (later.j.masters || []).map(mm => mm.data && mm.data.name));
     // a write whose answer is lost: the database DID it – not sent again
     await fault({ match: '^POST /rest/v1/eng_masters', after: true, drop: true, n: 1 });
     const lost = await SA.eng({ action: 'masterSave', kind: 'work', mode: 'new', valid_from: TODAY, data: { name: 'Lost Answer Work', sort: 60 } });
@@ -70,7 +71,7 @@ const IST = 330 * 60000, TODAY = new Date(Date.now() + IST).toISOString().slice(
     const n = Number(sql('rcl_eng', "select count(*) from eng_masters where data->>'name' = 'Lost Answer Work'"));
     ok('a new work whose answer was lost on the way back (it WAS saved): saved once, and he is told to look first', n === 1 && lost.status === 503 && /may or may not have been saved/.test(String(lost.j.error || '')), { rows: n, status: lost.status, said: lost.j.error });
     await fault({ match: '^GET /rest/v1/eng_masters', drop: true, n: 1 });
-    await wait(15500);
+    await wait(2100);
     const again = await AD.eng({ action: 'init' }); await fault({});
     ok('a look whose first read was lost: asked again by itself', again.status === 200 && (again.j.masters || []).length >= 3, { status: again.status, n: (again.j.masters || []).length });
   } catch (e) { ok('no crash', false, String(e && e.stack || e)); }

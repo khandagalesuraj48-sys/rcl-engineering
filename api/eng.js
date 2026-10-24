@@ -452,20 +452,26 @@ A.report = async (s, x, C) => {
 };
 
 /* (24-10-2026, Mechanical's update-155: "Engineering मधील अनावश्यक Requests कमी कर") WHAT THE SITE HAS SET UP (the masters, the
- * road, who does which work, the people – at least 4 reads) was read again for EVERY action, also the reminder's every 10 minutes.
- * Now a look (the page's lists, the dashboard, the reports, the reminder) takes this server's copy when it is under 15 seconds old
- * (a copy of it for each request, so nothing a request does can change it). EVERY SAVE reads it afresh, as before – what is
- * checked is always what the database has – and empties the copy. Per site: a site's copy is never used for another. */
+ * road, who does which work, the people – at least 4 reads) was read again for EVERY action – a page that opens asks several at
+ * once. Now the looks (the page's lists, the dashboard, the reports, the reminder) that come within 2 SECONDS of each other share
+ * one read of this server (each gets its own copy, so nothing a request does can change another's). 2 seconds: what another
+ * person saves shows within the owner's 2 seconds (02-10-2026), on any of Vercel's servers. EVERY SAVE reads it afresh, as before –
+ * what is checked is always what the database has – and its end drops the shared read (also one that started during the save).
+ * Per site: a site's read is never used for another. */
 const WRITES = new Set(['roadSave', 'masterSave', 'masterActive', 'personAdd', 'assignSave', 'planSave', 'reportSave']);
-const CTX = new Map();      // site → { at, C }
+const CTX = new Map();      // site → { at, p: the read (a promise) }
+const CTX_MS = 2000;
 async function ctxFor(site, fresh) {
+  if (fresh) return ctxOf(site);
   const k = CTX.get(site);
-  if (!fresh && k && Date.now() - k.at < 15000) return structuredClone(k.C);
-  const C = await ctxOf(site);
+  if (k && Date.now() - k.at < CTX_MS) return structuredClone(await k.p);
   if (CTX.size > 50) CTX.clear();
-  CTX.set(site, { at: Date.now(), C: structuredClone(C) });
-  return C;
+  const e = { at: Date.now(), p: ctxOf(site) };      // kept from its START: a save that ends meanwhile drops it
+  CTX.set(site, e);
+  e.p.catch(() => { if (CTX.get(site) === e) CTX.delete(site); });      // a read that failed is not shared
+  return structuredClone(await e.p);
 }
+const ctxDrop = site => CTX.delete(site);
 module.exports = handler(async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'POST only.' });
   sameSite(req);
@@ -474,11 +480,12 @@ module.exports = handler(async (req, res) => {
   const w = WRITES.has(String(x.action));
   const C = await ctxFor(s.site, w);
   let out;
-  try { out = await fn(s, x, C); } finally { if (w) CTX.delete(s.site); }
+  try { out = await fn(s, x, C); } finally { if (w) ctxDrop(s.site); }
   // (update-155) a look from a page that keeps its answers: "the same" / only what changed / whole (lib/http.js sendKept)
   if (!w && x.m === 1) return sendKept(res, s, x, Object.assign({ ok: true }, out));
   send(res, 200, Object.assign({ ok: true }, out));
 });
 module.exports.forgetCtx = () => CTX.clear();
+module.exports.ctxFor = ctxFor; module.exports.ctxDrop = ctxDrop;
 module.exports.A = A;
 module.exports.perWork = perWork;
