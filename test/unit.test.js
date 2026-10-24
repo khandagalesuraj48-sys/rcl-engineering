@@ -294,3 +294,24 @@ test('update-157: the backup export – only with the secret; one site\'s rows o
     assert.strictEqual((await call({ action: 'rows', table: 'eng_masters', site: "S1';--" })).status, 400);
   } finally { global.fetch = f0; Object.keys(env).forEach(k => { if (env[k] === undefined) delete process.env[k]; else process.env[k] = env[k]; }); }
 });
+
+test('update-158: the backup export says how full the Engineering database is (web_usage) – no site needed, no row of any table; before its step: which file to run', async () => {
+  const E = require('../api/backup-export.js');
+  const env = { BACKUP_EXPORT_SECRET: process.env.BACKUP_EXPORT_SECRET, VERCEL_ENV: process.env.VERCEL_ENV, SUPABASE_URL: process.env.SUPABASE_URL, SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY }, f0 = global.fetch;
+  const asked = []; let missing = false;
+  global.fetch = async (url, o) => { asked.push(String(url) + ' ' + ((o && o.method) || 'GET'));
+    if (/rpc\/web_usage$/.test(String(url))) return missing ? new Response('{}', { status: 404 }) : new Response(JSON.stringify({ db: 98765, files: [] }), { status: 200 });
+    return new Response('[]', { status: 200 }); };
+  const call = async (body, auth) => { let status = 0, out = null;
+    const res = { setHeader() {}, end(t) { out = JSON.parse(t); }, set statusCode(v) { status = v; } };
+    await E({ method: 'POST', headers: auth === undefined ? { authorization: 'Bearer ' + 'k'.repeat(30) } : auth, body: body }, res); return { status: status, j: out }; };
+  try {
+    process.env.SUPABASE_URL = 'http://db.test'; process.env.SUPABASE_SECRET_KEY = 'k'; process.env.VERCEL_ENV = 'production'; process.env.BACKUP_EXPORT_SECRET = 'k'.repeat(30);
+    assert.strictEqual((await call({ action: 'usage' }, { authorization: 'Bearer nope' })).status, 401);
+    const r = await call({ action: 'usage' });
+    assert.deepStrictEqual([r.status, r.j], [200, { db: 98765, files: [] }]);
+    assert.deepStrictEqual(asked, ['http://db.test/rest/v1/rpc/web_usage POST']);
+    missing = true; const m = await call({ action: 'usage' });
+    assert.ok(m.j.needSql && /eng_step2_usage\.sql/.test(m.j.error), JSON.stringify(m.j));
+  } finally { global.fetch = f0; Object.keys(env).forEach(k => { if (env[k] === undefined) delete process.env[k]; else process.env[k] = env[k]; }); }
+});

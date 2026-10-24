@@ -13,7 +13,7 @@ const TABLES = {
   eng_reasons: { title: 'Reasons', key: 'key' },
   eng_activity: { title: 'Activity', key: 'id', since: 'at' },
 };
-const run = make(TABLES, { site: true });
+const run = make(TABLES, { site: true, usageStep: 'sql/eng_step2_usage.sql' });      // (update-158) usage: the Portal's Sites → Storage (the one database of every site)
 module.exports = handler(async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'POST only.' });
   allowed(req);

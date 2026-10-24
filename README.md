@@ -58,7 +58,7 @@ earlier progress is not known).
 | Every action (set-up, plan, report, views) and its access | `api/eng.js` |
 | The rules (lines, periods, figures, strip chart) | `lib/rules.js` |
 | Database, ticket check, sign-ins, activity record | `lib/db.js`, `lib/portal.js`, `lib/session.js`, `lib/activity.js` |
-| Database (run once in the Engineering Supabase) | `sql/eng_step1.sql` |
+| Database (run once in the Engineering Supabase) | `sql/eng_step1.sql`; `sql/eng_step2_usage.sql` (update-158: how full the database is – the Portal's Sites → Storage) |
 
 ## Settings (Vercel → the Engineering project → Settings → Environment Variables – never in a file)
 | Name | What |
