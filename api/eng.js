@@ -7,7 +7,7 @@
  * DAY (what was done that day, sent the next morning); the dashboard of a day shows the work of the day before it and that
  * day's program – as in the site's daily report. */
 'use strict';
-const { handler, readBody, send, sameSite, fail } = require('../lib/http');
+const { handler, readBody, send, sameSite, fail, sendKept } = require('../lib/http');
 const { db, enc } = require('../lib/db');
 const ses = require('../lib/session');
 const { activity } = require('../lib/activity');
@@ -451,13 +451,41 @@ A.report = async (s, x, C) => {
   return { from: sp.from, to: sp.to, works: works, reports: { sent: sent, due: due } };
 };
 
+/* (24-10-2026, Mechanical's update-155: "Engineering मधील अनावश्यक Requests कमी कर") WHAT THE SITE HAS SET UP (the masters, the
+ * road, who does which work, the people – at least 4 reads) was read again for EVERY action – a page that opens asks several at
+ * once. Now the looks (the page's lists, the dashboard, the reports, the reminder) that come within 2 SECONDS of each other share
+ * one read of this server (each gets its own copy, so nothing a request does can change another's). 2 seconds: what another
+ * person saves shows within the owner's 2 seconds (02-10-2026), on any of Vercel's servers. EVERY SAVE reads it afresh, as before –
+ * what is checked is always what the database has – and its end drops the shared read (also one that started during the save).
+ * Per site: a site's read is never used for another. */
+const WRITES = new Set(['roadSave', 'masterSave', 'masterActive', 'personAdd', 'assignSave', 'planSave', 'reportSave']);
+const CTX = new Map();      // site → { at, p: the read (a promise) }
+const CTX_MS = 2000;
+async function ctxFor(site, fresh) {
+  if (fresh) return ctxOf(site);
+  const k = CTX.get(site);
+  if (k && Date.now() - k.at < CTX_MS) return structuredClone(await k.p);
+  if (CTX.size > 50) CTX.clear();
+  const e = { at: Date.now(), p: ctxOf(site) };      // kept from its START: a save that ends meanwhile drops it
+  CTX.set(site, e);
+  e.p.catch(() => { if (CTX.get(site) === e) CTX.delete(site); });      // a read that failed is not shared
+  return structuredClone(await e.p);
+}
+const ctxDrop = site => CTX.delete(site);
 module.exports = handler(async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'POST only.' });
   sameSite(req);
   const s = await ses.need(req), x = await readBody(req), fn = A[String(x.action || '')];
   if (!fn || !Object.prototype.hasOwnProperty.call(A, x.action)) throw fail(400, 'Unknown action.', 'action');
-  const C = await ctxOf(s.site);
-  send(res, 200, Object.assign({ ok: true }, await fn(s, x, C)));
+  const w = WRITES.has(String(x.action));
+  const C = await ctxFor(s.site, w);
+  let out;
+  try { out = await fn(s, x, C); } finally { if (w) ctxDrop(s.site); }
+  // (update-155) a look from a page that keeps its answers: "the same" / only what changed / whole (lib/http.js sendKept)
+  if (!w && x.m === 1) return sendKept(res, s, x, Object.assign({ ok: true }, out));
+  send(res, 200, Object.assign({ ok: true }, out));
 });
+module.exports.forgetCtx = () => CTX.clear();
+module.exports.ctxFor = ctxFor; module.exports.ctxDrop = ctxDrop;
 module.exports.A = A;
 module.exports.perWork = perWork;
