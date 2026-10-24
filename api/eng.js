@@ -7,7 +7,7 @@
  * DAY (what was done that day, sent the next morning); the dashboard of a day shows the work of the day before it and that
  * day's program – as in the site's daily report. */
 'use strict';
-const { handler, readBody, send, sameSite, fail } = require('../lib/http');
+const { handler, readBody, send, sameSite, fail, sendKept } = require('../lib/http');
 const { db, enc } = require('../lib/db');
 const ses = require('../lib/session');
 const { activity } = require('../lib/activity');
@@ -451,13 +451,34 @@ A.report = async (s, x, C) => {
   return { from: sp.from, to: sp.to, works: works, reports: { sent: sent, due: due } };
 };
 
+/* (24-10-2026, Mechanical's update-155: "Engineering मधील अनावश्यक Requests कमी कर") WHAT THE SITE HAS SET UP (the masters, the
+ * road, who does which work, the people – at least 4 reads) was read again for EVERY action, also the reminder's every 10 minutes.
+ * Now a look (the page's lists, the dashboard, the reports, the reminder) takes this server's copy when it is under 15 seconds old
+ * (a copy of it for each request, so nothing a request does can change it). EVERY SAVE reads it afresh, as before – what is
+ * checked is always what the database has – and empties the copy. Per site: a site's copy is never used for another. */
+const WRITES = new Set(['roadSave', 'masterSave', 'masterActive', 'personAdd', 'assignSave', 'planSave', 'reportSave']);
+const CTX = new Map();      // site → { at, C }
+async function ctxFor(site, fresh) {
+  const k = CTX.get(site);
+  if (!fresh && k && Date.now() - k.at < 15000) return structuredClone(k.C);
+  const C = await ctxOf(site);
+  if (CTX.size > 50) CTX.clear();
+  CTX.set(site, { at: Date.now(), C: structuredClone(C) });
+  return C;
+}
 module.exports = handler(async (req, res) => {
   if (req.method !== 'POST') return send(res, 405, { error: 'POST only.' });
   sameSite(req);
   const s = await ses.need(req), x = await readBody(req), fn = A[String(x.action || '')];
   if (!fn || !Object.prototype.hasOwnProperty.call(A, x.action)) throw fail(400, 'Unknown action.', 'action');
-  const C = await ctxOf(s.site);
-  send(res, 200, Object.assign({ ok: true }, await fn(s, x, C)));
+  const w = WRITES.has(String(x.action));
+  const C = await ctxFor(s.site, w);
+  let out;
+  try { out = await fn(s, x, C); } finally { if (w) CTX.delete(s.site); }
+  // (update-155) a look from a page that keeps its answers: "the same" / only what changed / whole (lib/http.js sendKept)
+  if (!w && x.m === 1) return sendKept(res, s, x, Object.assign({ ok: true }, out));
+  send(res, 200, Object.assign({ ok: true }, out));
 });
+module.exports.forgetCtx = () => CTX.clear();
 module.exports.A = A;
 module.exports.perWork = perWork;
