@@ -267,3 +267,30 @@ test('update-155: a new row is not sent twice after no answer; one that never le
     }
   } finally { global.fetch = f0; Object.keys(env).forEach(k => { if (env[k] === undefined) delete process.env[k]; else process.env[k] = env[k]; }); }
 });
+
+test('update-157: the backup export – only with the secret; one site\'s rows only; never the sign-ins; "since" for Sheet 2', async () => {
+  const E = require('../api/backup-export.js');
+  const env = { BACKUP_EXPORT_SECRET: process.env.BACKUP_EXPORT_SECRET, VERCEL_ENV: process.env.VERCEL_ENV, SUPABASE_URL: process.env.SUPABASE_URL, SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY }, f0 = global.fetch;
+  const asked = [];
+  global.fetch = async (url) => { const u = String(url); asked.push(u);
+    if (/\/rest\/v1\/$/.test(u)) return new Response(JSON.stringify({ definitions: { eng_masters: { properties: { id: {}, site: {}, item: {}, updated_at: {} } }, eng_days: { properties: { site: {}, day: {}, email: {}, plan_at: {} } }, eng_sessions: { properties: { id_hash: {} } } } }), { status: 200 });
+    if (/\?select=\*/.test(u)) return new Response(JSON.stringify([{ id: 1, site: 'S1', item: 'W-001' }]), { status: 200 });
+    return new Response('[]', { status: 200, headers: { 'content-range': '*/3' } }); };
+  const call = async body => { let status = 0, out = null;
+    const res = { setHeader() {}, end(t) { out = JSON.parse(t); }, set statusCode(v) { status = v; } };
+    await E({ method: 'POST', headers: { authorization: 'Bearer ' + 'k'.repeat(30) }, body: body }, res); return { status: status, j: out }; };
+  try {
+    process.env.SUPABASE_URL = 'http://db.test'; process.env.SUPABASE_SECRET_KEY = 'k'; process.env.VERCEL_ENV = 'production'; process.env.BACKUP_EXPORT_SECRET = 'k'.repeat(30);
+    assert.strictEqual((await call({ action: 'catalog' })).status, 400);      // a site must be named
+    asked.length = 0; let r = await call({ action: 'catalog', site: 's1' });
+    assert.deepStrictEqual(r.j.tables.map(t => t.name), ['eng_masters', 'eng_days']);      // the sign-ins are never in the list
+    assert.ok(asked.slice(1).every(u => /&site=eq\.S1/.test(u)), asked.join(' '));      // counted for that site only
+    asked.length = 0; r = await call({ action: 'rows', table: 'eng_masters', site: 'S1' });
+    assert.ok(/eng_masters\?select=\*&site=eq\.S1&order=id\.asc&offset=0&limit=1000$/.test(asked[0]), asked[0]);
+    assert.strictEqual((await call({ action: 'rows', table: 'eng_sessions', site: 'S1' })).status, 400);
+    assert.strictEqual((await call({ action: 'rows', table: 'eng_tickets', site: 'S1' })).status, 400);
+    asked.length = 0; await call({ action: 'rows', table: 'eng_days', site: 'S1', since: '2026-10-24T08:00:00Z' });
+    assert.ok(/eng_days\?select=\*&site=eq\.S1&or=\(plan_at\.gte\.2026-10-24T08%3A00%3A00Z,report_at\.gte\.2026-10-24T08%3A00%3A00Z,edited_at\.gte\.2026-10-24T08%3A00%3A00Z\)&order=day\.asc,email\.asc/.test(asked[0]), asked[0]);
+    assert.strictEqual((await call({ action: 'rows', table: 'eng_masters', site: "S1';--" })).status, 400);
+  } finally { global.fetch = f0; Object.keys(env).forEach(k => { if (env[k] === undefined) delete process.env[k]; else process.env[k] = env[k]; }); }
+});

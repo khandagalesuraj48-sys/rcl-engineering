@@ -67,6 +67,7 @@ earlier progress is not known).
 | `SUPABASE_SECRET_KEY` | the Engineering project's secret key (Supabase → Project Settings → API Keys) |
 | `PORTAL_URL` | the same value as in the Store project |
 | `PUBLIC_URL` | `https://oneclicksolution-erp.vercel.app/engineering` |
+| `BACKUP_EXPORT_SECRET` | (with Mechanical's update-157) a long secret word (at least 24 letters and digits) – the SAME value in rclerp and rcl-portal. Mechanical's nightly backup asks `/api/backup-export` with it for one site's Engineering rows (into that site's backup Sheet). Not set = nothing is given. |
 
 ## One address
 Mechanical's `vercel.json` rewrites `/engineering/…` to this project, so Engineering opens inside Mechanical's screen (its own
