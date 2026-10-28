@@ -315,3 +315,18 @@ test('update-158: the backup export says how full the Engineering database is (w
     assert.ok(m.j.needSql && /eng_step2_usage\.sql/.test(m.j.error), JSON.stringify(m.j));
   } finally { global.fetch = f0; Object.keys(env).forEach(k => { if (env[k] === undefined) delete process.env[k]; else process.env[k] = env[k]; }); }
 });
+
+test('(28-10-2026) the assistant\'s Engineering look-ups: only these five, through Engineering\'s own looks and their checks; short answers', () => {
+  const AL = require('../lib/ailook');
+  assert.deepStrictEqual(AL.NAMES, ['eng_my_work', 'eng_dashboard', 'eng_report', 'eng_performance', 'eng_progress']);
+  assert.throws(() => AL.day('28-10-2026', 'To date'), /^Error: Give the To date as yyyy-mm-dd\.$/); assert.strictEqual(AL.day('', 'x'), ''); assert.strictEqual(AL.day('2026-10-28', 'x'), '2026-10-28');
+  assert.deepStrictEqual(AL.pick([{ a: 1, b: '', c: null, d: 'x'.repeat(300) }], ['a', 'b', 'c', 'd'], 5), [{ a: 1, d: 'x'.repeat(200) + '…' }]);
+  const big = AL.fit({ total: 3, rows: Array.from({ length: 200 }, () => ({ t: 'y'.repeat(200) })) });
+  assert.ok(JSON.stringify(big).length <= 14000 && big.total === 3 && /^Only the first \d+ of "rows"/.test(big.note));
+  const src = fs.readFileSync(path.join(ROOT, 'api', 'eng.js'), 'utf8'), body = src.slice(src.indexOf('A.aiLook = async'), src.indexOf('/* (24-10-2026, Mechanical\'s update-155:'));
+  // each look is the page's own action (with its own access check) – nothing is written
+  ['A.days(s,', 'A.dash(s,', 'A.report(s,', 'A.perf(s,', 'A.strip(s,'].forEach(k => assert.ok(body.indexOf(k) > -1, k));
+  assert.ok(!/db\('(POST|PATCH|DELETE)'|activity\(/.test(body), 'it writes nothing');
+  assert.ok(!/'aiLook'/.test(src.slice(src.indexOf('const WRITES')).split('\n')[0]), 'not one of the saves');
+  assert.match(src, /There is no such look-up of Engineering\./);
+});

@@ -23,7 +23,8 @@ function client(base) {
 }
 async function ticketFor(portal, mod, site) { const r = await portal.req('/api/go?module=' + mod + '&site=' + site); return (r.loc.split('#sso=')[1] || ''); }
 async function engAs(email, pw, site) {
-  const p = client(P); const l = await p.req('/api/auth', { action: 'login', email: email, password: pw });
+  const p = client(P); let l = await p.req('/api/auth', { action: 'login', email: email, password: pw });
+  if (l.status !== 200 && email === 'sa@rcl.test') l = await p.req('/api/auth', { action: 'login', email: email, password: 'Super#Admin2041' });      // (the Portal's own test, run first on the rig, leaves his password so)
   if (l.status !== 200) throw new Error('Portal sign-in of ' + email + ': ' + JSON.stringify(l.j));
   const s = client(E), t = await ticketFor(p, 'engineering', site), r = await s.req('/api/sso', { ticket: t });
   return { p, s, t, r, eng: body => s.req('/api/eng', body) };
@@ -209,6 +210,25 @@ const Y = add(TODAY, -1), Y2 = add(TODAY, -2);
   ok('   a User cannot open another person\'s days', r.status === 403, r.j);
   r = await AD.eng({ action: 'dayView', email: 'eng1@rcl.test', day: Y });
   ok('   the Admin opens eng1\'s report (View report)', r.status === 200 && r.j.doc.report.lines.length === 2, r.j);
+
+  // ---- (28-10-2026) the assistant's look-ups (Mechanical's Ask): each through the look of this module, with its own access ----
+  r = await AD.eng({ action: 'aiLook', name: 'eng_report', args: { from: add(TODAY, -6), to: Y } });
+  const ar = (r.j.works || []).find(w => w.name === 'Embankment') || {};
+  ok('aiLook eng_report (the Admin): the week\'s report made short – Embankment 800 of 700 planned, 300 outside, its people', r.status === 200 && ar.planned === 700 && ar.done === 800 && ar.outside === 300 && /Engineer One/.test(ar.people || '') && r.j.reportsDue >= 1, r.j);
+  r = await AD.eng({ action: 'aiLook', name: 'eng_performance', args: { from: add(TODAY, -6), to: TODAY } });
+  ok('   eng_performance: eng1 – 1,250 of 1,700 m (74 %), 2 corrections', r.status === 200 && (r.j.people || []).some(p => p.name === 'Engineer One' && p.done === 1250 && p.planned === 1700 && p.pct === 74 && p.edits === 2), r.j);
+  r = await AD.eng({ action: 'aiLook', name: 'eng_dashboard', args: { day: Y } });
+  ok('   eng_dashboard of yesterday: its tiles and works, who reported', r.status === 200 && r.j.workDay === Y && r.j.tiles && Array.isArray(r.j.works) && r.j.works.length >= 1 && Array.isArray(r.j.people), r.j);
+  r = await U1.eng({ action: 'aiLook', name: 'eng_report', args: { from: Y, to: Y } });
+  ok('   a User: the report is refused as on its page ("This page is for the Admin and the Super Admin.")', r.status === 403 && r.j.error === 'This page is for the Admin and the Super Admin.', r.j);
+  r = await U1.eng({ action: 'aiLook', name: 'eng_my_work', args: { from: add(TODAY, -6), to: TODAY } });
+  ok('   a User: his own days (his works, each day planned / reported with its lines)', r.status === 200 && r.j.person === 'Engineer One' && r.j.days.some(d => d.reported && d.lines.some(l => l.work === 'Embankment')), r.j);
+  r = await U1.eng({ action: 'aiLook', name: 'eng_progress', args: {} });
+  ok('   a User: the strip chart\'s progress (each layer)', r.status === 200 && Array.isArray(r.j.layers) && r.j.layers.length >= 1, r.j);
+  r = await U1.eng({ action: 'aiLook', name: 'planSave', args: {} });
+  ok('   anything else: "There is no such look-up of Engineering." (nothing saved)', r.status === 400 && r.j.error === 'There is no such look-up of Engineering.', r.j);
+  r = await U1.eng({ action: 'aiLook', name: 'eng_report', args: { from: '01-10-2026' } });
+  ok('   a date not as yyyy-mm-dd: said', r.status === 400 && r.j.error === 'Give the From date as yyyy-mm-dd.', r.j);
 
   // ---- one site never sees another's ----
   const T = client(E); r = await T.req('/api/sso', { ticket: await ticketFor(AD.p, 'engineering', 'T2') });

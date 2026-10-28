@@ -49,6 +49,12 @@ outline = done on the work day; dashed gold = today's program. "Progress as on" 
 done on each side and the per cent of the length of the sides the work is done on, and this month. 18B starts from zero (its
 earlier progress is not known).
 
+## The assistant (Mechanical's Ask) reads Engineering (28-10-2026, with Mechanical's update-185)
+* Mechanical's Ask (the robot, web and phone app) answers about this site's Engineering too: the person's own work (plans, reports),
+  the progress (the strip chart's layers), and – for the Admin and the Super Admin – the dashboard of a day, the report of a period and
+  the performance. It asks Engineering itself – action `aiLook` of `api/eng.js` (`lib/ailook.js`) – with the person's own Engineering
+  sign-in, through the same looks and checks as the pages. It only reads. No database step, no new setting.
+
 ## Parts
 | Part | File |
 |---|---|
