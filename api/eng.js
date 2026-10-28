@@ -451,6 +451,46 @@ A.report = async (s, x, C) => {
   return { from: sp.from, to: sp.to, works: works, reports: { sent: sent, due: due } };
 };
 
+/* (28-10-2026) THE ASSISTANT'S LOOK-UPS ("AI la app cha main brain": Mechanical's Ask answers about Engineering too) – read only,
+ * each through the look of this file with its own check of the person's access (the dashboard, the report and the performance:
+ * the Admin and the Super Admin; the progress and his own days: everybody of Engineering) – lib/ailook.js makes them short. */
+const AL = require('../lib/ailook');
+A.aiLook = async (s, x, C) => {
+  const name = String(x.name || ''), a = x.args && typeof x.args === 'object' && !Array.isArray(x.args) ? x.args : {};
+  let to, from;
+  try {
+    to = AL.day(a.to, 'To date') || R.today(); from = AL.day(a.from, 'From date') || R.addDays(to, -6);
+    if (AL.NAMES.indexOf(name) < 0) throw AL.userErr('There is no such look-up of Engineering.');
+  } catch (e) { if (e.user) throw fail(400, e.message, 'field'); throw e; }
+  const nm = (w, d) => workInfo(C, w, d || to).name;
+  if (name === 'eng_my_work') {
+    const d = await A.days(s, { from: from, to: to }, C);
+    return AL.fit({ person: d.name, from: from, to: to, worksGiven: d.works.map(w => nm(w)), reportOfYesterdayDue: d.remind ? d.remind.due : undefined,
+      days: d.days.map(doc => ({ day: doc.day, planned: !!(doc.plan || []).length, reported: !!doc.report, reportAt: doc.report_at || '', edits: doc.edits || 0,
+        lines: AL.pick(R.dayFigures(doc).map(f => Object.assign({}, f, { work: nm(f.work, doc.day) })), ['work', 'layer', 'side', 'pFrom', 'pTo', 'planned', 'from', 'to', 'done', 'left', 'reason', 'outside'], 20) })) });
+  }
+  if (name === 'eng_dashboard') {
+    const d = await A.dash(s, { day: AL.day(a.day, 'day') || R.addDays(R.today(), -1) }, C);
+    return AL.fit({ workDay: d.day, programDay: d.next, tiles: d.tiles, meaning: 'planned / done / outside are metres of the works counted in m; reportsIn of reportsDue',
+      works: AL.pick(d.works.map(w => Object.assign({}, w, { left: w.lines ? w.lines.filter(l => l.left > 0).map(l => l.name + ' ' + l.left + ' ' + w.unit + (l.reason ? ' – ' + l.reason : '')).join('; ') : '', missing: (w.missing || []).map(p => p.name || p).join(', '), week: w.week ? w.week.pct + '% of the week\'s plan done' : '' })),
+        ['name', 'unit', 'planned', 'done', 'outside', 'pct', 'status', 'left', 'missing', 'week'], 40),
+      people: AL.pick(d.people, ['name', 'planned', 'reported', 'late', 'edits', 'program'], 60), attention: d.attention.map(t => t.text).slice(0, 40) });
+  }
+  if (name === 'eng_report') {
+    const d = await A.report(s, { from: from, to: to }, C);
+    return AL.fit({ from: d.from, to: d.to, reportsSent: d.reports.sent, reportsDue: d.reports.due,
+      works: AL.pick(d.works.map(w => Object.assign({}, w, { people: (w.people || []).map(p => p.name + ' ' + p.done + ' of ' + p.planned + ' (' + p.pct + '%)').join('; '), reasons: (w.reasons || []).slice(0, 8).map(r => r.text + ' ×' + r.times).join('; ') })),
+        ['name', 'unit', 'planned', 'done', 'outside', 'pct', 'people', 'reasons'], 40) });
+  }
+  if (name === 'eng_performance') {
+    const d = await A.perf(s, { from: from, to: to }, C);
+    return AL.fit({ from: d.from, to: d.to, people: AL.pick(d.people.map(p => Object.assign({}, p, { works: Object.keys(p.works || {}).join(', ') })), ['name', 'due', 'sent', 'late', 'edits', 'missing', 'planned', 'done', 'outside', 'pct', 'last', 'works'], 60),
+      meaning: 'due = reports to send; sent; late = sent after the morning; missing = not sent; planned / done in metres' });
+  }
+  const d = await A.strip(s, { day: AL.day(a.day, 'day') || R.today() }, C);
+  return AL.fit({ upTo: d.day, road: d.road, sides: d.sides, layers: AL.pick(d.stats, ['name', 'per', 'done', 'month', 'pct'], 40), meaning: 'per = km finished on each side; done = metres in all; month = km this month; pct = % of the length of its sides' });
+};
+
 /* (24-10-2026, Mechanical's update-155: "Engineering मधील अनावश्यक Requests कमी कर") WHAT THE SITE HAS SET UP (the masters, the
  * road, who does which work, the people – at least 4 reads) was read again for EVERY action – a page that opens asks several at
  * once. Now the looks (the page's lists, the dashboard, the reports, the reminder) that come within 2 SECONDS of each other share
