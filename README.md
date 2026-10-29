@@ -73,6 +73,9 @@ words); the page shows the report of an earlier day without the form and says wh
 any day. The plan as before (today and the next 7 days; the Super Admin any day). With Mechanical update-187, the Store and the phone app.
 Tests: unit; rig `test/today.test.js` (the rule on) 3/3; `test/api.test.js` 89/90 and `test/browser.test.js` 23/24 with `ENG_DAY_RULE=off`
 (only the rig sets it – its story is dated over a week; the one line of each fails the same on main).
+**Put right the same day (the review; with Mechanical update-188):** a page left open past midnight reads "today" again from the server
+on the new day (`dayCheck` – every 10 minutes and when the page comes back to the front), so a user's today / yesterday follow the day;
+`ENG_DAY_RULE=off` is never obeyed on Vercel (`process.env.VERCEL`).
 
 ## Settings (Vercel → the Engineering project → Settings → Environment Variables – never in a file)
 | Name | What |
