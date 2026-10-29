@@ -5,9 +5,10 @@
 const M = '/home/claude/test/node_modules/';
 const chromium = require(M + '@sparticuz/chromium').default || require(M + '@sparticuz/chromium'); const puppeteer = require(M + 'puppeteer-core');
 const fs = require('fs'), path = require('path'), http = require('http');
-// the voice script of this module's page (Mechanical: the inline block of app/App.html between its two markers)
+// the voice script of this module's page (Mechanical, the Portal: the block inside the page between its two markers)
 const V = (() => { const f = path.join(__dirname, '..', 'public', 'voice.js'); if (fs.existsSync(f)) return fs.readFileSync(f, 'utf8');
-  const a = fs.readFileSync(path.join(__dirname, '..', 'app', 'App.html'), 'utf8'), i = a.indexOf('/* RCL ERP – SPEAK INTO A BOX'), j = a.indexOf('/* (end of SPEAK INTO A BOX) */'); return a.slice(i, j); })();
+  const h = ['app/App.html', 'public/index.html'].map(x => path.join(__dirname, '..', x)).find(x => fs.existsSync(x) && fs.readFileSync(x, 'utf8').includes('/* (end of SPEAK INTO A BOX) */'));
+  const a = fs.readFileSync(h, 'utf8'), i = a.indexOf('/* RCL ERP – SPEAK INTO A BOX'), j = a.indexOf('/* (end of SPEAK INTO A BOX) */'); return a.slice(i, j); })();
 const page = `<!doctype html><html><head><meta charset="utf-8"></head><body style="padding:40px">
 <input id="t" type="text" style="width:300px"> <input id="q" inputmode="decimal" style="width:80px"> <input id="n" type="number" style="width:200px"> <input id="ph" type="tel">
 <input id="pw" type="password"> <input id="d" type="date"> <textarea id="ta"></textarea> <div data-novoice><input id="nv"></div> <input id="ro" readonly>
