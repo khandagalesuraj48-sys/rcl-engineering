@@ -680,7 +680,7 @@
 
   async function loadInit() {
     const r = await eng({ action: 'init' });
-    S.today = r.today; S.masters = r.masters; S.people = r.people; S.assign = r.assign; S.reasons = r.reasons; S.sides = r.sides; S.road = r.road; S.remind = r.remind;
+    S.today = r.today; S.dayAt = istNow().toISOString().slice(0, 10); S.masters = r.masters; S.people = r.people; S.assign = r.assign; S.reasons = r.reasons; S.sides = r.sides; S.road = r.road; S.remind = r.remind;
     $('dl_reasons').innerHTML = S.reasons.map(t => '<option value="' + esc(t) + '">').join('');
     LOADED.ok();
   }
@@ -704,11 +704,18 @@
     try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) { if (notifyHourly.last === key) return; notifyHourly.last = key; }
     try { const n = new Notification('Submit report', { body: 'The report of your work of ' + showDay(r.day) + ' is not in yet.', tag: 'rcl-eng-report' }); n.onclick = () => { window.focus(); S.mw.email = ''; S.mw.day = S.today; go('mywork'); }; } catch (e) { /* the bar on the page stays */ }
   }
+  /* (29-10-2026, the review) a page left open past midnight: "today" is read again from the server on the new day (the report's
+   * days, a user's today / yesterday) – every 10 minutes and when the page comes back to the front */
+  async function dayCheck() {
+    if (!S.today || S.dayAt === istNow().toISOString().slice(0, 10)) return;
+    try { const r = await eng({ action: 'init' }); S.today = r.today; S.dayAt = istNow().toISOString().slice(0, 10); S.remind = r.remind; } catch (e) { /* the next try */ }
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) dayCheck(); });
   function remindLoop() {
     notifyHourly();
     clearInterval(remindLoop.t);
     // (24-10-2026, Mechanical's update-155) asked only in the reminder's hours (9 to 20 h) – was all night too
-    remindLoop.t = setInterval(async () => { const h = istNow().getUTCHours(); if (h < RH.from || h > RH.to) { drawRemind(); return; }
+    remindLoop.t = setInterval(async () => { await dayCheck(); const h = istNow().getUTCHours(); if (h < RH.from || h > RH.to) { drawRemind(); return; }
       try { S.remind = (await eng({ action: 'remind' })).remind; } catch (e) { /* the next try */ } drawRemind(); notifyHourly(); }, 10 * 60000);
   }
   $('remind_go').addEventListener('click', () => { S.mw.email = ''; S.mw.day = S.today; S.mw.editRep = true; go('mywork'); });

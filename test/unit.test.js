@@ -334,7 +334,7 @@ test('(28-10-2026) the assistant\'s Engineering look-ups: only these five, throu
 test('(29-10-2026) an Engineering User sends / changes the report only of today or yesterday – the Engineering Admin and the Super Admin any day; the page says so', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'api', 'eng.js'), 'utf8'), page = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
   const at = src.indexOf('A.reportSave = async'), body = src.slice(at, src.indexOf('\n};', at));
-  assert.ok(body.indexOf("if (process.env.ENG_DAY_RULE !== 'off' && !canView(s) && d < R.addDays(t, -1)) throw fail(400, 'The report of ' + R.showDay(d) + ': a user sends the report of today or yesterday only – a report of an earlier day is sent only by the Engineering Admin or the Super Admin. Ask the Admin.', 'date');") > -1);
+  assert.ok(body.indexOf("if ((process.env.ENG_DAY_RULE !== 'off' || process.env.VERCEL) && !canView(s) && d < R.addDays(t, -1)) throw fail(400, 'The report of ' + R.showDay(d) + ': a user sends the report of today or yesterday only – a report of an earlier day is sent only by the Engineering Admin or the Super Admin. Ask the Admin.', 'date');") > -1);
   assert.ok(body.indexOf('!canView(s)') < body.indexOf('R.cleanReport('), 'checked before anything is read or written');
   assert.match(src, /const canView = s => s\.role === 'super' \|\| s\.role === 'admin';/);
   const pl = src.slice(src.indexOf('A.planSave = async'), src.indexOf('A.reportSave = async'));
@@ -342,4 +342,8 @@ test('(29-10-2026) an Engineering User sends / changes the report only of today 
   assert.match(page, /const repDayOk = X => canView\(\) \|\| X >= addDays\(S\.today, -1\);/);
   assert.match(page, /if \(!repDayOk\(X\)\) return '<div class="empty" id="rp_old">A user sends the report of today or yesterday only/);
   assert.match(page, /if \(mwMayChange\(\) && repDayOk\(X\)\) h \+= '<div class="bar"><button type="button" class="btn" id="rp_change">/);
+  // (the review) the rig's switch never on Vercel; a page left open past midnight reads "today" again
+  assert.match(page, /async function dayCheck\(\) \{\n    if \(!S\.today \|\| S\.dayAt === istNow\(\)\.toISOString\(\)\.slice\(0, 10\)\) return;/);
+  assert.match(page, /remindLoop\.t = setInterval\(async \(\) => \{ await dayCheck\(\);/);
+  assert.match(page, /document\.addEventListener\('visibilitychange', \(\) => \{ if \(!document\.hidden\) dayCheck\(\); \}\);/);
 });

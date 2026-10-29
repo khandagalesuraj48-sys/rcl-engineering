@@ -318,8 +318,8 @@ A.reportSave = async (s, x, C) => {
   if (d > t) throw fail(400, 'A report is of work done – today or a day before.', 'date');
   // (29-10-2026, the MD – urgent: "admin ani super admin fkt back dated entry kru shakto baki konich nahi … modual wise"; his answer for
   // Engineering: a user's report of yesterday and today) an Engineering User sends / changes the report only of today or yesterday
-  // (ENG_DAY_RULE=off only on the local test rig – its story is dated over a week; never set in Vercel)
-  if (process.env.ENG_DAY_RULE !== 'off' && !canView(s) && d < R.addDays(t, -1)) throw fail(400, 'The report of ' + R.showDay(d) + ': a user sends the report of today or yesterday only – a report of an earlier day is sent only by the Engineering Admin or the Super Admin. Ask the Admin.', 'date');
+  // (ENG_DAY_RULE=off only on the local test rig – its story is dated over a week; never on Vercel)
+  if ((process.env.ENG_DAY_RULE !== 'off' || process.env.VERCEL) && !canView(s) && d < R.addDays(t, -1)) throw fail(400, 'The report of ' + R.showDay(d) + ': a user sends the report of today or yesterday only – a report of an earlier day is sent only by the Engineering Admin or the Super Admin. Ask the Admin.', 'date');
   const old = await docOf(s.site, d, who.email);
   const rep = R.cleanReport(x.report, old ? old.plan : [], dayCtx(C, d, s, who.email));
   if (!rep.lines.length && !rep.extra.length && !rep.note) throw fail(400, 'Nothing was planned for ' + R.showDay(d) + ': add the work done (outside the plan), or write in the note what happened.', 'empty');
