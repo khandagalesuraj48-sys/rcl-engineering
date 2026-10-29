@@ -77,6 +77,18 @@ Tests: unit; rig `test/today.test.js` (the rule on) 3/3; `test/api.test.js` 89/9
 on the new day (`dayCheck` – every 10 minutes and when the page comes back to the front), so a user's today / yesterday follow the day;
 `ENG_DAY_RULE=off` is never obeyed on Vercel (`process.env.VERCEL`).
 
+## 🎙 Speak into a box (29-10-2026; no database step)
+Asked: "jithe jithe type krun entry hotat … tithe voice mick banaw user apla voice madhe bolel … text madhe add krel ok hindi english
+marathi"; his answers: the app AND the website; words and numbers. `public/voice.js` (the same file in the Store and the Portal; inline in
+Mechanical): a box where an entry is typed (text, number, phone, a note), when it is in use, shows a 🎙 at its right end. Pressed, the
+browser's own speech recognition (Chrome / Edge) listens in **मराठी / हिंदी / English** (chips while it listens; the one chosen is
+kept in the browser). What was said goes in as if typed (the page's input / change): a number box gets the **number** – "साडे तीन हजार"
+→ 3500, "बारा पॉइंट पाच" → 12.5, "डेढ़ सौ" → 150 (`RclVoice.toNumber`); a phone box the digits; a text box the words at the cursor.
+Never in a password box or where a page says `data-novoice`; a browser that cannot listen: no 🎙. `vercel.json` now lets the site's own
+pages use the microphone (`microphone=(self)`; the camera and the place stay off). Tests: unit (the number cases, the page loads it, the
+rule); `test/voice.browser.test.js` 21/21 (a stand-in for the browser's listening); the rig's `api.test.js` and `browser.test.js` the
+same as on main (89/1 and 23/1 – the one each that fails on main too comes from the rig's state).
+
 ## Settings (Vercel → the Engineering project → Settings → Environment Variables – never in a file)
 | Name | What |
 |---|---|
