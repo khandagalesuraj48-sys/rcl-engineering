@@ -89,6 +89,16 @@ pages use the microphone (`microphone=(self)`; the camera and the place stay off
 rule); `test/voice.browser.test.js` 21/21 (a stand-in for the browser's listening); the rig's `api.test.js` and `browser.test.js` the
 same as on main (89/1 and 23/1 – the one each that fails on main too comes from the rig's state).
 
+## Live: another person's report or plan shows by itself (29-10-2026; no database step)
+Asked: "supabase 2 second cha vishay … saving mahtwachi aahe but data real time disne user laa he pn mahtwach aahe … niyojan tu kar". On
+the views that show other people's work – **Dashboard, Strip chart, All reports** – the page asks only "what changed at this site?"
+(`live` – the newest row of the site's activity, by its index (site, at); every save notes one, the unit test checks it) every 2 s while
+it is used, every 15 s after 5 quiet minutes, nothing while the tab is hidden, at once when seen again – and reads its view again only
+when it changed. The server answers it from one read in 2 s for every open page of the site, **without** the site's whole read (`C`);
+its own save reads it again at once. My work (a plan or a report being typed) and the Set-up are never redrawn by it; a dialog open:
+after it. Tests: unit; rig `test/live.test.js` 7/7 (the Dashboard read again within 4 s of a save at its site, not of another site's;
+hidden tab; My work nothing); `api.test.js` 89/1 and `browser.test.js` 23/1 – as main. (The phone app has no Engineering screens yet – only its assistant reads Engineering.)
+
 ## Settings (Vercel → the Engineering project → Settings → Environment Variables – never in a file)
 | Name | What |
 |---|---|

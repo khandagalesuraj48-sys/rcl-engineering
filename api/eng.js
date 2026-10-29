@@ -165,6 +165,19 @@ A.init = async (s, x, C) => {
     reasons: reasons.map(r => r.text), units: R.UNITS, sides: sidesOn(C, R.today()).names, remind: await reminderOf(C, s, s.email) };
 };
 A.remind = async (s, x, C) => ({ remind: await reminderOf(C, s, s.email) });
+/* (29-10-2026, the MD: "supabase 2 second cha vishay … saving mahtwachi aahe but data real time disne user laa he pn mahtwach aahe …
+ * niyojan tu kar") LIVE – what changed at this site? the newest activity row of the site (every save of Engineering notes one – the unit
+ * test checks it): one read of the database (its index – site, at) for every open page of the site on this server in 2 seconds; never
+ * the site's whole read (C) – the page reads its view again only when this changes. */
+const LIVE = new Map();
+function liveOf(site) {
+  const c = LIVE.get(site); if (c && Date.now() - c.at < 2000) return c.p;
+  const e = { at: Date.now(), p: db('GET', 'eng_activity?select=id,at&site=eq.' + enc(site) + '&order=at.desc&limit=1').then(r => (r && r[0] ? r[0].id + '.' + r[0].at : '0')) };
+  LIVE.set(site, e); e.p.catch(() => { if (LIVE.get(site) === e) LIVE.delete(site); });
+  if (LIVE.size > 50) LIVE.clear();
+  return e.p;
+}
+A.live = async (s) => ({ v: await liveOf(s.site) });
 
 /* ---------- SET-UP (the Super Admin) ---------- */
 A.roadGet = async (s, x, C) => {
@@ -522,9 +535,9 @@ module.exports = handler(async (req, res) => {
   const s = await ses.need(req), x = await readBody(req), fn = A[String(x.action || '')];
   if (!fn || !Object.prototype.hasOwnProperty.call(A, x.action)) throw fail(400, 'Unknown action.', 'action');
   const w = WRITES.has(String(x.action));
-  const C = await ctxFor(s.site, w);
+  const C = x.action === 'live' ? null : await ctxFor(s.site, w);      // (29-10-2026) the live question reads only its one row
   let out;
-  try { out = await fn(s, x, C); } finally { if (w) ctxDrop(s.site); }
+  try { out = await fn(s, x, C); } finally { if (w) { ctxDrop(s.site); LIVE.delete(s.site); } }
   // (update-155) a look from a page that keeps its answers: "the same" / only what changed / whole (lib/http.js sendKept)
   if (!w && x.m === 1) return sendKept(res, s, x, Object.assign({ ok: true }, out));
   send(res, 200, Object.assign({ ok: true }, out));

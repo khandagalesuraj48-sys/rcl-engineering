@@ -719,6 +719,30 @@
     remindLoop.t = setInterval(async () => { await dayCheck(); const h = istNow().getUTCHours(); if (h < RH.from || h > RH.to) { drawRemind(); return; }
       try { S.remind = (await eng({ action: 'remind' })).remind; } catch (e) { /* the next try */ } drawRemind(); notifyHourly(); }, 10 * 60000);
   }
+  /* (29-10-2026, the MD: "supabase 2 second cha vishay … data real time disne user laa he pn mahtwach aahe … niyojan tu kar") LIVE:
+   * another person's report or plan shows by itself on the views that show other people's work (Dashboard, Strip chart, All reports),
+   * as Mechanical's pages: the page asks only "what changed at this site?" (live – about 60 bytes) every 2 s while it is used, every 15 s
+   * after 5 minutes nobody touched it, nothing while the tab is hidden, at once when it is seen again – and reads its view again only
+   * when something changed. My work (a plan or a report being typed) and the Set-up are never redrawn by it; a dialog open: after it. */
+  const LIVE_PAGES = new Set(['dashboard', 'strip', 'allreports']);
+  const LV = { v: null, page: '', touched: Date.now(), t: null, pend: false };
+  const liveIdle = () => Date.now() - LV.touched > 300000;
+  function liveSoon(ms) { clearTimeout(LV.t); LV.t = null; if (!document.hidden) LV.t = setTimeout(liveTick, ms); }
+  async function liveTick() {
+    const pg = S.page || '';
+    if (!LIVE_PAGES.has(pg) || !S.me) { LV.v = null; LV.page = pg; return liveSoon(3000); }
+    if (pg !== LV.page) { LV.page = pg; LV.v = null; LV.pend = false; }
+    try {
+      const r = await eng({ action: 'live' });
+      if (LV.v !== null && String(r.v) !== LV.v) LV.pend = true;
+      LV.v = String(r.v);
+      if (LV.pend && $('dlg').hidden && document.body.dataset.loaded === pg) { LV.pend = false; await LOAD[pg](); }
+    } catch (e) { /* the next time */ }
+    liveSoon(liveIdle() ? 15000 : 2000);
+  }
+  ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { const was = liveIdle(); LV.touched = Date.now(); if (was) liveSoon(0); }, { passive: true, capture: true }));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { clearTimeout(LV.t); LV.t = null; } else liveSoon(0); });
+  liveSoon(3000);
   $('remind_go').addEventListener('click', () => { S.mw.email = ''; S.mw.day = S.today; S.mw.editRep = true; go('mywork'); });
   $('remind_nt').addEventListener('click', async () => { try { await Notification.requestPermission(); } catch (e) { /* not possible here */ } drawRemind(); notifyHourly(); });
 
