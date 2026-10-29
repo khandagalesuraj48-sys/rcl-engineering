@@ -66,6 +66,14 @@ earlier progress is not known).
 | Database, ticket check, sign-ins, activity record | `lib/db.js`, `lib/portal.js`, `lib/session.js`, `lib/activity.js` |
 | Database (run once in the Engineering Supabase) | `sql/eng_step1.sql`; `sql/eng_step2_usage.sql` (update-158: how full the database is – the Portal's Sites → Storage) |
 
+## A user's report only of today or yesterday (29-10-2026 – urgent; no database step)
+Asked: "admin ani super admin fkt back dated entry kru shakto baki konich nahi … modual wise"; his answer for Engineering: a user's report
+of yesterday and today. **An Engineering User** sends or changes the report only of **today or yesterday** (`A.reportSave`, refused in his
+words); the page shows the report of an earlier day without the form and says who sends it. **The Engineering Admin and the Super Admin:**
+any day. The plan as before (today and the next 7 days; the Super Admin any day). With Mechanical update-187, the Store and the phone app.
+Tests: unit; rig `test/today.test.js` (the rule on) 3/3; `test/api.test.js` 89/90 and `test/browser.test.js` 23/24 with `ENG_DAY_RULE=off`
+(only the rig sets it – its story is dated over a week; the one line of each fails the same on main).
+
 ## Settings (Vercel → the Engineering project → Settings → Environment Variables – never in a file)
 | Name | What |
 |---|---|
