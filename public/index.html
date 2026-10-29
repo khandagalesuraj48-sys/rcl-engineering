@@ -744,6 +744,8 @@
   $('mw_who').addEventListener('change', () => { S.mw.email = $('mw_who').value === S.me.user.email ? '' : $('mw_who').value; S.mw.editRep = false; LOAD.mywork().catch(failed); });
   const mwOwn = () => !S.mw.email || S.mw.email === S.me.user.email;
   const mwMayChange = () => mwOwn() || isSuper();
+  // (29-10-2026) a user's report only of today or yesterday – the Engineering Admin and the Super Admin any day (the server refuses another)
+  const repDayOk = X => canView() || X >= addDays(S.today, -1);
   // the works this person may put in a plan or a report of a day: the works given to him (the Super Admin: every active work)
   function worksFor(d) {
     const on = itemsOn('work', d), mine = S.mw.data ? S.mw.data.works : [];
@@ -775,11 +777,12 @@
           (l.left > 0 ? ' · <span class="leftinfo">' + fmt(l.left) + ' ' + esc(u) + ' left</span>' : ' <span class="okinfo">✓</span>') + (l.reason ? '<br><span class="muted">Why:</span> ' + esc(l.reason) : '') + '</div>'; });
       if (rep.extra.length) h += '<h3>Outside the plan</h3>' + rep.extra.map(l => '<div class="readline outside">+ ' + lineText(l, X) + (l.reason ? ' <span class="muted">– ' + esc(l.reason) + '</span>' : '') + '</div>').join('');
       if (rep.note) h += '<p><span class="muted">Note:</span> ' + esc(rep.note) + '</p>';
-      if (mwMayChange()) h += '<div class="bar"><button type="button" class="btn" id="rp_change">✎ Change report</button><button type="button" class="btn small" id="rp_text">Report as text</button></div>';
+      if (mwMayChange() && repDayOk(X)) h += '<div class="bar"><button type="button" class="btn" id="rp_change">✎ Change report</button><button type="button" class="btn small" id="rp_text">Report as text</button></div>';
       else h += '<div class="bar"><button type="button" class="btn small" id="rp_text">Report as text</button></div>';
       return h;
     }
     if (!mwMayChange()) return '<div class="empty">' + (plan.length ? 'The report is not in yet.' : 'No plan and no report for this day.') + '</div>';
+    if (!repDayOk(X)) return '<div class="empty" id="rp_old">A user sends the report of today or yesterday only – the report of ' + esc(longDay(X)) + ' is sent by the Engineering Admin or the Super Admin. · आजचा किंवा कालचाच report user पाठवतो – त्याआधीचा Engineering Admin किंवा Super Admin.</div>';
     let h = rep ? '<div class="sugg tag warn" style="display:block;margin-bottom:8px">Changing the report sent ' + esc(when(doc.report_at)) + ' – the change is kept (✎).</div>' : '';
     if (!plan.length) h += '<p class="muted">No plan was made for this day. Add the work done below (outside the plan), or write a note.</p>';
     const got = {}; if (rep) rep.lines.forEach(l => { got[l.plan] = l; });
