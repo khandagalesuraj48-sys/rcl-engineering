@@ -358,3 +358,17 @@ test('(29-10-2026, "jithe jithe type krun entry hotat … voice mick … hindi e
   const pp = (JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'vercel.json'), 'utf8')).headers || []).flatMap(h => h.headers || []).find(h => h.key === 'Permissions-Policy').value;
   assert.strictEqual(pp, 'camera=(), microphone=(self), geolocation=()', 'the microphone for its own pages only; the camera and the place still off');
 });
+
+test('(29-10-2026, "supabase 2 second … data real time disne … niyojan tu kar") LIVE: every save notes an activity row (the live answer is the newest of the site); one read in 2 s for a site, never the site\'s whole read; the page asks only on Dashboard / Strip chart / All reports – 2 s, 15 s idle, nothing hidden; My work and the Set-up never redrawn by it', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'api/eng.js'), 'utf8'), page = fs.readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
+  const writes = /const WRITES = new Set\(\[([^\]]+)\]\)/.exec(src)[1].split(',').map(x => x.trim().replace(/'/g, ''));
+  assert.ok(writes.length >= 7, writes);
+  writes.forEach(n => { const i = src.indexOf('\nA.' + n + ' = async'), j = src.indexOf('\nA.', i + 5); assert.ok(i > 0, n); assert.ok(/await activity\(/.test(src.slice(i, j > 0 ? j : i + 6000)), n + ' notes an activity row'); });
+  assert.ok(src.includes("db('GET', 'eng_activity?select=id,at&site=eq.' + enc(site) + '&order=at.desc&limit=1')"), 'its index (site, at)');
+  assert.ok(src.includes('if (c && Date.now() - c.at < 2000) return c.p;'));
+  assert.ok(src.includes("const C = x.action === 'live' ? null : await ctxFor(s.site, w);"), "the live question never reads the site's whole set-up");
+  assert.ok(src.includes('finally { if (w) { ctxDrop(s.site); LIVE.delete(s.site); } }'), "a save: this server's live answer read again");
+  assert.ok(page.includes("const LIVE_PAGES = new Set(['dashboard', 'strip', 'allreports']);"));
+  assert.ok(page.includes('liveSoon(liveIdle() ? 15000 : 2000);'));
+  assert.ok(page.includes("if (LV.pend && $('dlg').hidden && document.body.dataset.loaded === pg) { LV.pend = false; await LOAD[pg](); }"));
+});
