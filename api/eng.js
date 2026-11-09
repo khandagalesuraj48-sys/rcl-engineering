@@ -162,7 +162,7 @@ A.init = async (s, x, C) => {
   const see = canView(s);
   return { today: R.today(), me: { email: s.email, name: s.name, role: s.role }, road: C.road, masters: C.masters,
     assign: see ? C.assign : C.assign.filter(a => a.email === s.email), people: see ? C.people : C.people.filter(p => p.email === s.email),
-    reasons: reasons.map(r => r.text), units: R.UNITS, sides: sidesOn(C, R.today()).names, remind: await reminderOf(C, s, s.email) };
+    reasons: reasons.map(r => r.text), units: R.UNITS, sides: sidesOn(C, R.today()).names, remind: await reminderOf(C, s, s.email), rfiRule: await ruleOf(s.site) };
 };
 A.remind = async (s, x, C) => ({ remind: await reminderOf(C, s, s.email) });
 /* (29-10-2026, the MD: "supabase 2 second cha vishay … saving mahtwachi aahe but data real time disne user laa he pn mahtwach aahe …
@@ -318,11 +318,12 @@ A.planSave = async (s, x, C) => {
   const old = await docOf(s.site, d, who.email);
   if (old && old.report) throw fail(400, 'The report of ' + R.showDay(d) + ' is in – its plan stays as it was. Change the report instead.', 'reported');
   const plan = R.cleanPlan(x.lines, Object.assign(dayCtx(C, d, s, who.email), { keep: [] }));
+  const skip = await rfiCheck(s, C, d, plan, 'Line', x);      // (09-11-2026) the layer below approved by the IE
   const now = nowIso(), first = !old || !old.plan_at;
   const patch = { name: who.name, plan: plan, plan_at: first ? now : old.plan_at, plan_by: first ? s.email : old.plan_by };
   if (!first) patch.history = [{ at: now, by: s.email, what: 'plan', plan: old.plan }].concat(old.history || []).slice(0, 30);
   const doc = await writeDoc(s.site, d, who.email, old, x.ver, patch);
-  await activity(s.site, s.email, first ? 'Plan made' : 'Plan changed', who.email + ' ' + d, { lines: plan.length });
+  await activity(s.site, s.email, first ? 'Plan made' : 'Plan changed', who.email + ' ' + d, Object.assign({ lines: plan.length }, skip ? { rfiSkip: skip } : {}));
   return { doc: doc };
 };
 // the report of a work day (today or before): by the person himself, or the Super Admin; a change after it was sent is kept (✎)
@@ -336,12 +337,16 @@ A.reportSave = async (s, x, C) => {
   const old = await docOf(s.site, d, who.email);
   const rep = R.cleanReport(x.report, old ? old.plan : [], dayCtx(C, d, s, who.email));
   if (!rep.lines.length && !rep.extra.length && !rep.note) throw fail(400, 'Nothing was planned for ' + R.showDay(d) + ': add the work done (outside the plan), or write in the note what happened.', 'empty');
+  // (09-11-2026) the layer below approved by the IE: the stretches reported done (plan lines and work outside the plan)
+  const plan0 = old ? old.plan || [] : [];
+  const doneLines = rep.lines.map(l => { const p = plan0.find(y => y.id === l.plan) || {}; return { work: p.work, layer: p.layer, side: l.side || p.side, from: l.qty > 0 ? l.from : null, to: l.qty > 0 ? l.to : null }; }).concat(rep.extra);
+  const skip = await rfiCheck(s, C, d, doneLines, 'Line', x);
   const now = nowIso(), first = !old || !old.report;
   const patch = { name: who.name, report: rep, report_at: first ? now : old.report_at, report_by: first ? s.email : old.report_by };
   if (!first) Object.assign(patch, { edited_at: now, edited_by: s.email, edits: Number(old.edits || 0) + 1, history: [{ at: now, by: s.email, what: 'report', report: old.report }].concat(old.history || []).slice(0, 30) });
   const doc = await writeDoc(s.site, d, who.email, old, x.ver, patch);
   try { await saveReasons(s.site, R.reasonsOf(rep), first ? [] : R.reasonsOf(old.report), s.email); } catch (e) { console.error('[engineering reasons] ' + String((e && e.message) || e)); }
-  await activity(s.site, s.email, first ? 'Report sent' : 'Report changed', who.email + ' ' + d, { lines: rep.lines.length, extra: rep.extra.length });
+  await activity(s.site, s.email, first ? 'Report sent' : 'Report changed', who.email + ' ' + d, Object.assign({ lines: rep.lines.length, extra: rep.extra.length }, skip ? { rfiSkip: skip } : {}));
   return { doc: doc };
 };
 A.reasons = async (s) => ({ reasons: ((await db('GET', 'eng_reasons?select=text,uses&site=eq.' + enc(s.site) + '&order=uses.desc,last_used.desc&limit=300')) || []).map(r => r.text) });
@@ -405,9 +410,16 @@ A.strip = async (s, x, C) => {
     on.forEach(n => { const a = (now.sides[n].done[l.id] || 0), b = (then.sides[n].done[l.id] || 0); per[n] = R.r3(a / 1000); done += a; before += b; len += now.sides[n].length || 0; });
     return { id: l.id, name: l.name, per: per, done: R.r3(done), month: R.r3((done - before) / 1000), pct: len > 0 ? Math.round(done / len * 1000) / 10 : null };
   });
+  // (09-11-2026) the RFI rule on: the stretches of each piece done since the rule's day with no approved RFI (striped on the chart)
+  const rule = await ruleOf(s.site); let rfiOn = false;
+  if (rule && rule.on && rule.from && rule.from <= W) {
+    rfiOn = true;
+    const after = R.doneBy(list, rank, y => y >= rule.from && y <= W), ok = R.approvedBy(await approvedRfis(s.site));
+    sd.names.forEach(n => { ((now.sides[n] || {}).pieces || []).forEach(p => { const o = R.minus(R.within(((after[n] || {})[p.layer]) || [], [[p.from, p.to]]), ((ok[n] || {})[p.layer]) || []); if (R.lenOf(o) >= 0.5) p.open = o; }); });
+  }
   const first = list.length ? list[0].day : W;
   const range = C.road ? { from: C.road.ch_from, to: C.road.ch_to } : (() => { const all2 = [].concat(...Object.keys(now.sides).map(n => now.sides[n].pieces)); return all2.length ? { from: Math.min(...all2.map(p => p.from)), to: Math.max(...all2.map(p => p.to)) } : { from: 0, to: 1000 }; })();
-  return { day: W, next: P, first: first, range: range, sides: sd.names, sidesSet: sd.set, layers: now.layers, strip: now.sides, yesterday: one(W), program: prog, stats: stats, road: C.road ? { name: C.road.name, from: C.road.ch_from, to: C.road.ch_to } : null };
+  return { day: W, next: P, first: first, range: range, sides: sd.names, sidesSet: sd.set, layers: now.layers, strip: now.sides, yesterday: one(W), program: prog, stats: stats, road: C.road ? { name: C.road.name, from: C.road.ch_from, to: C.road.ch_to } : null, rfi: rfiOn };
 };
 // ALL REPORTS: day by day (newest first), for each work who sent its report when, and how much of the plan was done
 A.grid = async (s, x, C) => {
@@ -441,8 +453,13 @@ A.perf = async (s, x, C) => {
     const pw = perWork(C, dd, d);
     Object.keys(pw).forEach(w => { if (d >= R.today() && !pw[w].senders.length) return; const r = matrix[w] = matrix[w] || {}; r[d] = { senders: pw[w].senders.map(y => y.name), missing: d >= R.today() ? [] : pw[w].missing.map(y => y.name), pct: pw[w].planned > 0 ? pw[w].pct : null }; });
   });
-  const people = Object.keys(P).map(e => { const p = P[e]; p.planned = R.r3(p.planned); p.done = R.r3(p.done); p.outside = R.r3(p.outside); p.pct = R.pct(p.done, p.planned); return p; }).sort((a, b) => b.sent - a.sent || a.name.localeCompare(b.name));
-  return { from: sp.from, to: sp.to, days: daysOf(sp.from, sp.to), people: people, works: Object.keys(matrix).sort(bySort(C, sp.to)).map(w => Object.assign(workInfo(C, w, sp.to), { days: matrix[w] })) };
+  // (09-11-2026, Engineering 2A) PPC – of the plan lines of the reported days, how many were done as planned; and the reasons, most frequent first
+  const reps = list.filter(y => y.report), why = {};
+  reps.forEach(doc => R.dayFigures(doc).forEach(f => { if (!f.reason || !(f.left > 0) || f.outside) return; const k = R.reasonKey(f.reason), r = why[k] = why[k] || { text: f.reason, times: 0, people: {} }; r.times++; r.people[doc.name || nameOf(C, doc.email)] = 1; }));
+  const people = Object.keys(P).map(e => { const p = P[e]; p.planned = R.r3(p.planned); p.done = R.r3(p.done); p.outside = R.r3(p.outside); p.pct = R.pct(p.done, p.planned); p.ppc = R.ppcOf(reps.filter(y => y.email === e)); return p; }).sort((a, b) => b.sent - a.sent || a.name.localeCompare(b.name));
+  const weeks = []; for (let a = sp.from; a <= sp.to; a = R.addDays(a, 7)) { const b = R.addDays(a, 6) < sp.to ? R.addDays(a, 6) : sp.to; weeks.push(Object.assign({ from: a, to: b }, R.ppcOf(reps.filter(y => y.day >= a && y.day <= b)))); }
+  return { from: sp.from, to: sp.to, days: daysOf(sp.from, sp.to), people: people, works: Object.keys(matrix).sort(bySort(C, sp.to)).map(w => Object.assign(workInfo(C, w, sp.to), { days: matrix[w] })),
+    ppc: R.ppcOf(reps), weeks: weeks, reasons: Object.keys(why).map(k => ({ text: why[k].text, times: why[k].times, people: Object.keys(why[k].people) })).sort((a, b) => b.times - a.times).slice(0, 15) };
 };
 // THE REPORT of a period (a day, a week, 15 days, a month): each work – planned, done, outside the plan, by person, the reasons
 A.report = async (s, x, C) => {
@@ -466,6 +483,132 @@ A.report = async (s, x, C) => {
   const sent = list.filter(y => y.report).length;
   let due = 0; daysOf(sp.from, sp.to).forEach(d => { due += Object.keys(dueOn(C, list.filter(y => y.day === d), d)).length; });
   return { from: sp.from, to: sp.to, works: works, reports: { sent: sent, due: due } };
+};
+
+/* ================= (09-11-2026) ENGINEERING 2A – RFI (the IE's approval of a layer) and HINDRANCES =================
+ * The owner's answers: the next layer is STOPPED on a chainage until the IE approves the layer below (the Super Admin can let it
+ * through, with a reason); the rule is switched on by the Super Admin from a date (Set-up → RFI rule), so the work done before that
+ * day never stops anything. sql/eng_step3_qc_hindrance.sql – before it is run, everything works as before (the rule is off). */
+async function ruleOf(site) {
+  try { const r = (await db('GET', 'eng_settings?select=value&site=eq.' + enc(site) + '&key=eq.rfi')) || []; const v = r[0] && r[0].value; return v && typeof v === 'object' ? { on: !!v.on, from: v.from || '', at: v.at || '', by: v.by || '' } : { on: false, from: '' }; }
+  catch (e) { if (e && e.code === 'notinstalled3') return null; throw e; }
+}
+const approvedRfis = site => all('eng_rfi?select=work,layer,side,ch_from,ch_to,status&site=eq.' + enc(site) + '&status=eq.Approved&order=no');
+// the lines a plan or a report would put on a layer whose layer below is not approved: refused – or let through by the Super Admin (x.rfiSkip: why)
+async function rfiCheck(s, C, d, lines, what, x) {
+  const rule = await ruleOf(s.site);
+  if (!rule || !rule.on || !rule.from || d < rule.from) return null;
+  const works = R.itemsOn(C.masters, 'work', d, true), rank = {};
+  R.layerList(works).forEach(l => { rank[l.id] = l.rank; });
+  if (!lines.some(l => l && l.from !== null && l.from !== undefined && rank[l.work + '|' + (l.layer || '')] > 1)) return null;
+  const list = await all('eng_days?select=day,email,plan,report&site=eq.' + enc(s.site) + '&day=gte.' + rule.from + '&day=lte.' + d + '&report=not.is.null&order=day,email');
+  const blocks = R.rfiBlocks(lines, works, R.doneBy(list, rank, y => y >= rule.from && y <= d), R.approvedBy(await approvedRfis(s.site)));
+  if (!blocks.length) return null;
+  const why = R.txt(x && x.rfiSkip, 200);
+  if (isSuper(s) && why.length >= 3) return { reason: why, lines: blocks.map(b => ({ line: b.i + 1, side: b.side, below: b.below.name, miss: b.miss })) };
+  throw fail(400, R.rfiSay(blocks, what), 'rfi');
+}
+const RFI_COLS = 'no,day,work,layer,side,ch_from,ch_to,qty,note,status,ie_day,ie_name,ie_ref,ie_remark,asked_by,asked_name,asked_at,decided_by,decided_at,updated_by,updated_at,history,ver';
+const numOut = r => { ['ch_from', 'ch_to', 'qty'].forEach(k => { if (r[k] !== null && r[k] !== undefined) r[k] = Number(r[k]); }); r.ver = Number(r.ver); return r; };
+async function nextNo(site, kind) { const n = Number(await db('POST', 'rpc/eng_next_no', { p_site: site, p_kind: kind })); if (!(n > 0)) throw fail(500, 'Could not take the next number – please try again.', 'number'); return n; }
+const givenWork = (C, email, w) => C.assign.some(a => a.email === email && a.work === w && a.active);
+async function rfiOf(site, no) { const r = ((await db('GET', 'eng_rfi?select=' + RFI_COLS + '&site=eq.' + enc(site) + '&no=eq.' + enc(no))) || [])[0]; if (!r) throw fail(404, 'This RFI is not there any more.', 'rfi'); return numOut(r); }
+// one change of an RFI / a hindrance, written only over the version that was read
+async function patchVer(table, site, no, ver, patch) {
+  const r = await db('PATCH', table + '?site=eq.' + enc(site) + '&no=eq.' + enc(no) + '&ver=eq.' + Number(ver), Object.assign({}, patch, { ver: Number(ver) + 1, updated_at: nowIso() }), 'return=representation');
+  if (!r || !r.length) throw fail(409, 'It was changed meanwhile (by someone else) – it is loaded again: look and do it once more.', 'changed');
+  return numOut(r[0]);
+}
+A.rfiRule = async (s, x) => {
+  needSuper(s);
+  const on = !!x.on, from = on ? R.day(x.from, 'the day the rule starts') : '';
+  try { await db('POST', 'eng_settings?on_conflict=site,key', [{ site: s.site, key: 'rfi', value: { on: on, from: from, at: nowIso(), by: s.email }, updated_by: s.email, updated_at: nowIso() }], 'resolution=merge-duplicates,return=minimal'); }
+  catch (e) { if (e && e.code === 'notinstalled3') throw fail(400, e.message, 'notinstalled3'); throw e; }
+  await activity(s.site, s.email, 'RFI rule', on ? 'on from ' + from : 'off', {});
+  return { rule: await ruleOf(s.site) };
+};
+A.rfiList = async (s, x) => {
+  let q = 'eng_rfi?select=' + RFI_COLS + '&site=eq.' + enc(s.site);
+  if (x.from || x.to) { const sp = span(x, 400); q += '&day=gte.' + sp.from + '&day=lte.' + sp.to; }
+  if (['Pending', 'Approved', 'Rejected', 'Cancelled'].indexOf(x.status) > -1) q += '&status=eq.' + x.status;
+  let rows;
+  try { rows = await all(q + '&order=day.desc,no.desc'); } catch (e) { if (e && e.code === 'notinstalled3') return { missing: e.message, rows: [], rule: null, decide: canView(s) }; throw e; }
+  return { rows: rows.map(numOut), rule: await ruleOf(s.site), decide: canView(s) };
+};
+// an RFI asked (or changed while it waits): by a person given that work, or the Admin / Super Admin
+A.rfiSave = async (s, x, C) => {
+  const t = R.today(), d = R.day(x.day, 'the RFI');
+  if (d > t) throw fail(400, 'An RFI is of work done – today or a day before.', 'date');
+  const w = R.itemsOn(C.masters, 'work', d)[String(x.work || '')];
+  if (!w) throw fail(400, 'Pick the work.', 'work');
+  if (!canView(s) && !givenWork(C, s.email, w.item)) throw fail(403, w.data.name + ' is not given to you – the Super Admin gives the works.', 'assign');
+  const ln = R.cleanRfi(x, w, C.road, sidesOn(C, d).names), now = nowIso();
+  const row = { day: d, work: ln.work, layer: ln.layer, side: ln.side, ch_from: ln.from, ch_to: ln.to, qty: ln.qty, note: ln.note };
+  if (x.no) {
+    const old = await rfiOf(s.site, String(x.no));
+    if (old.status !== 'Pending') throw fail(400, old.no + ' is ' + old.status + ' – it cannot be changed. Ask a new RFI.', 'status');
+    if (old.asked_by !== s.email && !canView(s)) throw fail(403, 'Only the person who asked it, or the Admin, changes an RFI.', 'access');
+    const keep = { at: now, by: s.email, what: 'changed', was: { day: old.day, work: old.work, layer: old.layer, side: old.side, ch_from: old.ch_from, ch_to: old.ch_to, qty: old.qty, note: old.note } };
+    const r = await patchVer('eng_rfi', s.site, old.no, x.ver, Object.assign(row, { updated_by: s.email, history: [keep].concat(old.history || []).slice(0, 30) }));
+    await activity(s.site, s.email, 'RFI changed', r.no, { work: r.work, layer: r.layer, side: r.side });
+    return { rfi: r };
+  }
+  const no = 'RFI-' + String(await nextNo(s.site, 'RFI')).padStart(4, '0');
+  const r = ((await db('POST', 'eng_rfi', [Object.assign({ site: s.site, no: no, status: 'Pending', asked_by: s.email, asked_name: s.name, asked_at: now, updated_by: s.email, updated_at: now, ver: 1 }, row)], 'return=representation')) || [])[0];
+  await activity(s.site, s.email, 'RFI asked', no, { work: row.work, layer: row.layer, side: row.side, from: row.ch_from, to: row.ch_to });
+  return { rfi: numOut(r) };
+};
+// the IE's answer, recorded by the Engineering Admin or the Super Admin
+A.rfiDecide = async (s, x) => {
+  if (!canView(s)) throw fail(403, 'Only the Engineering Admin or the Super Admin records the IE\'s answer.', 'access');
+  const old = await rfiOf(s.site, String(x.no || ''));
+  if (old.status !== 'Pending') throw fail(400, old.no + ' is ' + old.status + ' already.', 'status');
+  const dec = R.cleanDecision(x, R.today());
+  if (dec.ie_day < old.day) throw fail(400, 'The IE answered on or after the day of the RFI (' + R.showDay(old.day) + ').', 'date');
+  const now = nowIso();
+  const r = await patchVer('eng_rfi', s.site, old.no, x.ver, Object.assign({}, dec, { decided_by: s.email, decided_at: now, updated_by: s.email, history: [{ at: now, by: s.email, what: dec.status }].concat(old.history || []).slice(0, 30) }));
+  await activity(s.site, s.email, 'RFI ' + dec.status, r.no, { ie: dec.ie_name, day: dec.ie_day });
+  return { rfi: r };
+};
+A.rfiCancel = async (s, x) => {
+  const old = await rfiOf(s.site, String(x.no || ''));
+  if (old.status !== 'Pending') throw fail(400, old.no + ' is ' + old.status + ' – only a waiting RFI is cancelled.', 'status');
+  if (old.asked_by !== s.email && !canView(s)) throw fail(403, 'Only the person who asked it, or the Admin, cancels an RFI.', 'access');
+  const now = nowIso();
+  const r = await patchVer('eng_rfi', s.site, old.no, x.ver, { status: 'Cancelled', updated_by: s.email, history: [{ at: now, by: s.email, what: 'Cancelled' }].concat(old.history || []).slice(0, 30) });
+  await activity(s.site, s.email, 'RFI cancelled', r.no, {});
+  return { rfi: r };
+};
+/* HINDRANCES – the evidence for an extension of time: everybody of Engineering adds one; the person who added it, or the Admin,
+ * changes it (and closes it with the day it ended). The list of a period: each one's days inside it, the open ones, the days per work. */
+const HIND_COLS = 'no,from_day,to_day,ch_from,ch_to,side,works,kind,detail,letter,status,created_by,created_name,created_at,updated_by,updated_at,history,ver';
+async function hindOf(site, no) { const r = ((await db('GET', 'eng_hindrance?select=' + HIND_COLS + '&site=eq.' + enc(site) + '&no=eq.' + enc(no))) || [])[0]; if (!r) throw fail(404, 'This hindrance is not there any more.', 'hindrance'); return numOut(r); }
+A.hindList = async (s, x, C) => {
+  const sp = span({ from: x.from || R.addDays(R.today(), -89), to: x.to || R.today() }, 800), t = R.today();
+  let rows;
+  try { rows = (await all('eng_hindrance?select=' + HIND_COLS + '&site=eq.' + enc(s.site) + '&from_day=lte.' + sp.to + '&or=(to_day.is.null,to_day.gte.' + sp.from + ')&order=from_day.desc,no.desc')).map(numOut); }
+  catch (e) { if (e && e.code === 'notinstalled3') return { missing: e.message, rows: [], kinds: [], works: [], from: sp.from, to: sp.to }; throw e; }
+  rows.forEach(h => { h.days = R.hindDays(h, sp.from, sp.to, t); });
+  const per = {};
+  rows.forEach(h => (h.works.length ? h.works : ['*']).forEach(w => { const o = per[w] = per[w] || { work: w, name: w === '*' ? 'Every work' : workInfo(C, w, sp.to).name, days: 0, count: 0, open: 0 }; o.days += h.days; o.count++; if (!h.to_day) o.open++; }));
+  const kinds = [...new Set(((await all('eng_hindrance?select=kind&site=eq.' + enc(s.site) + '&order=updated_at.desc')) || []).map(r => r.kind))].slice(0, 200);
+  return { from: sp.from, to: sp.to, rows: rows, kinds: kinds, works: Object.keys(per).map(k => per[k]).sort((a, b) => b.days - a.days), open: rows.filter(h => !h.to_day).length };
+};
+A.hindSave = async (s, x, C) => {
+  const t = R.today(), h = R.cleanHindrance(x, { today: t, road: C.road, sideNames: sidesOn(C, t).names, works: R.itemsOn(C.masters, 'work', t, true) }), now = nowIso();
+  const row = Object.assign({}, h, { status: h.to_day ? 'Closed' : 'Open' });
+  if (x.no) {
+    const old = await hindOf(s.site, String(x.no));
+    if (old.created_by !== s.email && !canView(s)) throw fail(403, 'Only the person who added it, or the Admin, changes a hindrance.', 'access');
+    const keep = { at: now, by: s.email, was: { from_day: old.from_day, to_day: old.to_day, ch_from: old.ch_from, ch_to: old.ch_to, side: old.side, works: old.works, kind: old.kind, detail: old.detail, letter: old.letter } };
+    const r = await patchVer('eng_hindrance', s.site, old.no, x.ver, Object.assign(row, { updated_by: s.email, history: [keep].concat(old.history || []).slice(0, 30) }));
+    await activity(s.site, s.email, row.status === 'Closed' && old.status !== 'Closed' ? 'Hindrance closed' : 'Hindrance changed', r.no, { kind: r.kind });
+    return { hindrance: r };
+  }
+  const no = 'H-' + String(await nextNo(s.site, 'HIND')).padStart(4, '0');
+  const r = ((await db('POST', 'eng_hindrance', [Object.assign({ site: s.site, no: no, created_by: s.email, created_name: s.name, created_at: now, updated_by: s.email, updated_at: now, ver: 1 }, row)], 'return=representation')) || [])[0];
+  await activity(s.site, s.email, 'Hindrance added', no, { kind: row.kind, from: row.from_day });
+  return { hindrance: numOut(r) };
 };
 
 /* (28-10-2026) THE ASSISTANT'S LOOK-UPS ("AI la app cha main brain": Mechanical's Ask answers about Engineering too) – read only,
@@ -515,7 +658,7 @@ A.aiLook = async (s, x, C) => {
  * person saves shows within the owner's 2 seconds (02-10-2026), on any of Vercel's servers. EVERY SAVE reads it afresh, as before –
  * what is checked is always what the database has – and its end drops the shared read (also one that started during the save).
  * Per site: a site's read is never used for another. */
-const WRITES = new Set(['roadSave', 'masterSave', 'masterActive', 'personAdd', 'assignSave', 'planSave', 'reportSave']);
+const WRITES = new Set(['roadSave', 'masterSave', 'masterActive', 'personAdd', 'assignSave', 'planSave', 'reportSave', 'rfiRule', 'rfiSave', 'rfiDecide', 'rfiCancel', 'hindSave']);
 const CTX = new Map();      // site → { at, p: the read (a promise) }
 const CTX_MS = 2000;
 async function ctxFor(site, fresh) {

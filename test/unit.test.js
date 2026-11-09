@@ -122,8 +122,8 @@ test('the page: its script parses; its pages are the menu\'s pages', () => {
   assert.deepStrictEqual(keys, require('../api/menu.js').PAGES.map(p => p.key));
   keys.forEach(k => assert.ok(html.indexOf('id="pg_' + k + '"') > -1, 'a section for ' + k));
   const m = require('../api/menu.js');
-  assert.deepStrictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'user')).map(p => p.key), ['mywork', 'strip']);
-  assert.strictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'admin')).length, 6); assert.strictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'super')).length, 7);
+  assert.deepStrictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'user')).map(p => p.key), ['mywork', 'strip', 'rfi', 'hind']);      // (09-11-2026: RFI, Hindrances)
+  assert.strictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'admin')).length, 8); assert.strictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'super')).length, 9);
 });
 test('every action of the API is checked: the views need Admin, the set-up the Super Admin', () => {
   const src = fs.readFileSync(path.join(ROOT, 'api/eng.js'), 'utf8');
@@ -383,4 +383,64 @@ test('(29-10-2026, "supabase 2 second … data real time disne … niyojan tu ka
   assert.ok(page.includes("const LIVE_PAGES = new Set(['dashboard', 'strip', 'allreports']);"));
   assert.ok(page.includes('liveSoon(liveIdle() ? 15000 : 2000);'));
   assert.ok(page.includes("if (LV.pend && $('dlg').hidden && document.body.dataset.loaded === pg) { LV.pend = false; await LOAD[pg](); }"));
+});
+
+// (09-11-2026, Engineering 2A) the RFI rule, the hindrances, PPC – the rules on their own
+test('(09-11-2026) RFI: the layer below on a side; a line stopped only where the layer below was reported done and not approved; hindrance days; PPC', () => {
+  const works = {}; [W('W-001', { name: 'Embankment', sort: 20, layers: [{ name: 'Layer 1' }, { name: 'Top' }] }), W('W-002', { name: 'Subgrade', sort: 30, layers: [{ name: 'Layer 1' }] }),
+    W('W-005', { name: 'Median kerb', sort: 25, sides: ['Median'], layers: [{ name: 'Kerb' }] }), W('W-004', { name: 'Culvert', unit: 'Nos', strip: false, sort: 90 })].forEach(w => { works[w.item] = w; });
+  assert.strictEqual(R.layerBelow(works, 'W-002|L1', 'LHS').id, 'W-001|L2', 'Subgrade on LHS rests on Embankment Top (the Median kerb is not on LHS)');
+  assert.strictEqual(R.layerBelow(works, 'W-002|L1', 'Median').id, 'W-005|L1', 'on the Median: the kerb is the layer below');
+  assert.strictEqual(R.layerBelow(works, 'W-001|L2', 'RHS').id, 'W-001|L1');
+  assert.strictEqual(R.layerBelow(works, 'W-001|L1', 'RHS'), null, 'the lowest layer: nothing below');
+  assert.deepStrictEqual(R.minus([[0, 100], [200, 300]], [[50, 250]]), [[0, 50], [250, 300]]);
+  // done since the rule's day: Embankment Top on LHS 10+000–10+500; approved (an RFI on "Both"): 10+000–10+300
+  const done = { LHS: { 'W-001|L2': [[10000, 10500]] } }, ok = R.approvedBy([{ status: 'Approved', work: 'W-001', layer: 'L2', side: 'Both', ch_from: 10000, ch_to: 10300 }, { status: 'Pending', work: 'W-001', layer: 'L2', side: 'LHS', ch_from: 10300, ch_to: 10500 }]);
+  assert.deepStrictEqual(ok.LHS['W-001|L2'], [[10000, 10300]]); assert.ok(!ok.LHS['W-001|L1'] && ok.RHS, 'a waiting RFI counts for nothing; "Both" on LHS and RHS');
+  const L = (side, a, b, work, layer) => ({ work: work || 'W-002', layer: layer || 'L1', side: side, from: a, to: b });
+  assert.deepStrictEqual(R.rfiBlocks([L('LHS', 10000, 10300)], works, done, ok), [], 'on the approved stretch: allowed');
+  let b = R.rfiBlocks([L('LHS', 10200, 10600)], works, done, ok);
+  assert.deepStrictEqual(b.map(x => [x.i, x.side, x.below.name, x.miss]), [[0, 'LHS', 'Embankment · Top', [[10300, 10500]]]], 'done and not approved: stopped (beyond 10+500 the layer below was never reported – not stopped)');
+  assert.match(R.rfiSay(b, 'Line'), /^Line 1 \(LHS\): Embankment · Top is not approved by the IE on 10\+300–10\+500\. Its RFI must be approved first/);
+  b = R.rfiBlocks([L('Both', 10200, 10600), L('RHS', 10000, 10500), L('', null, null, 'W-004', ''), L('LHS', 10000, 10500, 'W-001', 'L1')], works, done, ok);
+  assert.deepStrictEqual(b.map(x => x.i + x.side), ['0LHS'], '"Both": LHS stopped, RHS not (nothing done there); a quantity line and the lowest layer never');
+  assert.deepStrictEqual(R.rfiBlocks([L('LHS', 10499.8, 10600)], works, done, ok), [], 'less than half a metre: not counted');
+  // the RFI and the IE's answer
+  assert.deepStrictEqual(R.cleanRfi({ work: 'W-001', layer: 'L2', side: 'LHS', from: '10+000', to: '10+300', note: ' ok ' }, works['W-001'], road, ['LHS', 'Median', 'RHS']), { work: 'W-001', layer: 'L2', side: 'LHS', from: 10000, to: 10300, qty: 300, note: 'ok' });
+  assert.throws(() => R.cleanRfi({ work: 'W-001', layer: 'L2', side: 'LHS', from: '10+300', to: '10+000' }, works['W-001'], road), /^Error: The RFI: the chainage "to"/);
+  assert.throws(() => R.cleanDecision({ status: 'Rejected', ie_day: '2026-11-01' }, '2026-11-09'), /why the IE rejected/);
+  assert.throws(() => R.cleanDecision({ status: 'Approved', ie_day: '2026-11-10' }, '2026-11-09'), /cannot be after today/);
+  assert.throws(() => R.cleanDecision({ status: 'Maybe', ie_day: '2026-11-01' }, '2026-11-09'), /approved or rejected/);
+  assert.deepStrictEqual(R.cleanDecision({ status: 'Approved', ie_day: '2026-11-08', ie_name: ' Mr IE ', ie_ref: 'RFI/18B/77' }, '2026-11-09'), { status: 'Approved', ie_day: '2026-11-08', ie_name: 'Mr IE', ie_ref: 'RFI/18B/77', ie_remark: '' });
+  // a hindrance: checked; its days inside a period
+  const hc = { today: '2026-11-09', road: road, sideNames: ['LHS', 'Median', 'RHS'], works: works };
+  assert.deepStrictEqual(R.cleanHindrance({ from_day: '2026-11-01', kind: ' Land not handed over ', works: ['W-002', 'W-002'], ch_from: '12+000', ch_to: '12+800', side: 'LHS' }, hc),
+    { from_day: '2026-11-01', to_day: null, ch_from: 12000, ch_to: 12800, side: 'LHS', works: ['W-002'], kind: 'Land not handed over', detail: '', letter: '' });
+  assert.throws(() => R.cleanHindrance({ from_day: '2026-11-10', kind: 'Rain' }, hc), /starts today or a day before/);
+  assert.throws(() => R.cleanHindrance({ from_day: '2026-11-05', to_day: '2026-11-04', kind: 'Rain' }, hc), /on or after "from"/);
+  assert.throws(() => R.cleanHindrance({ from_day: '2026-11-05', kind: '' }, hc), /Say what the hindrance is/);
+  assert.throws(() => R.cleanHindrance({ from_day: '2026-11-05', kind: 'Rain', ch_from: '12+000' }, hc), /both chainages/);
+  assert.throws(() => R.cleanHindrance({ from_day: '2026-11-05', kind: 'Rain', works: ['W-999'] }, hc), /from the list/);
+  assert.strictEqual(R.hindDays({ from_day: '2026-11-01', to_day: null }, '2026-10-01', '2026-11-30', '2026-11-09'), 9, 'still on: up to today');
+  assert.strictEqual(R.hindDays({ from_day: '2026-10-25', to_day: '2026-11-03' }, '2026-11-01', '2026-11-30', '2026-11-09'), 3, 'only the days inside the period');
+  assert.strictEqual(R.hindDays({ from_day: '2026-09-01', to_day: '2026-09-03' }, '2026-11-01', '2026-11-30', '2026-11-09'), 0);
+  // PPC: plan lines done as planned (all or more) of the reported days; work outside the plan does not count
+  const doc = (plan, lines, extra) => ({ email: 'a', day: '2026-11-01', plan: plan, report: { lines: lines, extra: extra || [] } });
+  const p = [{ id: 'p1', work: 'W-001', layer: 'L1', side: 'LHS', from: 0, to: 100, qty: 100 }, { id: 'p2', work: 'W-001', layer: 'L1', side: 'LHS', from: 100, to: 200, qty: 100 }, { id: 'p3', work: 'W-004', qty: 2 }];
+  assert.deepStrictEqual(R.ppcOf([doc(p, [{ plan: 'p1', qty: 100, left: 0 }, { plan: 'p2', qty: 60, left: 40, reason: 'rain' }, { plan: 'p3', qty: 3, left: 0 }], [{ work: 'W-001', qty: 50 }]), { email: 'a', day: '2026-11-02', plan: p, report: null }]), { lines: 3, done: 2, pct: 67 });
+  assert.deepStrictEqual(R.ppcOf([]), { lines: 0, done: 0, pct: null });
+});
+test('(09-11-2026) RFI and hindrances in the API: who may do what; every save notes an activity row; before step 3 the pages say which file to run', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'api/eng.js'), 'utf8');
+  assert.ok(/A\.rfiRule = async \(s, x\) => \{\n  needSuper\(s\);/.test(src), 'the rule: the Super Admin only');
+  assert.ok(/A\.rfiDecide = async \(s, x\) => \{\n  if \(!canView\(s\)\) throw fail\(403/.test(src), 'the IE\'s answer: the Admin or the Super Admin');
+  assert.ok(/if \(isSuper\(s\) && why\.length >= 3\) return/.test(src), 'only the Super Admin lets a line through, with a reason');
+  assert.ok(/const skip = await rfiCheck\(s, C, d, plan, 'Line', x\);/.test(src) && /const skip = await rfiCheck\(s, C, d, doneLines, 'Line', x\);/.test(src), 'the plan and the report are both checked');
+  assert.ok(/if \(!rule \|\| !rule\.on \|\| !rule\.from \|\| d < rule\.from\) return null;/.test(src), 'rule off, not set up (no step 3), or a day before its start: nothing stopped');
+  const db = fs.readFileSync(path.join(ROOT, 'lib/db.js'), 'utf8');
+  assert.match(db, /eng_\(rfi\|hindrance\|settings\|numbers\|next_no\)/); assert.match(db, /sql\/eng_step3_qc_hindrance\.sql/);
+  const sql = fs.readFileSync(path.join(ROOT, 'sql/eng_step3_qc_hindrance.sql'), 'utf8');
+  assert.ok(!/\b(drop table|delete from|truncate|alter table [^;]* drop)\b/i.test(sql.replace(/^--.*$/gm, '')), 'step 3 only adds');
+  ['eng_settings', 'eng_numbers', 'eng_rfi', 'eng_hindrance'].forEach(t => assert.ok(sql.includes('create table if not exists public.' + t + ' ('), t));
+  assert.match(sql, /revoke all on function public\.eng_next_no\(text, text\) from public, anon, authenticated;/);
 });

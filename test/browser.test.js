@@ -53,7 +53,7 @@ const SAPW = 'Super#Admin2040', PW = 'Nashik#Road848!', VPW = 'Audit#PassView9!x
     let p = U.p;
     ok('eng1 opens Engineering from the Portal\'s card (nothing typed here)', U.inE, p.url());
     let st = await p.evaluate(() => ({ pages: [...document.querySelectorAll('#eng_pages .navbtn')].map(x => x.textContent.trim()), title: document.getElementById('pg_title').textContent, role: document.getElementById('u_role').textContent }));
-    ok('   a User: his menu has My work and the Strip chart only; it opens on My work', st.pages.join() === 'My work,Strip chart' && st.title === 'My work' && /Engineering User/.test(st.role), st);
+    ok('   a User: his menu has My work, the Strip chart, RFI and Hindrances; it opens on My work', st.pages.join() === 'My work,Strip chart,RFI,Hindrances' && st.title === 'My work' && /Engineering User/.test(st.role), st);      // (09-11-2026: RFI, Hindrances)
     await until(() => p.evaluate(() => !!document.getElementById('mw_plan')));
     st = await p.evaluate(() => ({ plan: document.querySelectorAll('#mw_plan .pline').length, sent: (document.querySelector('#mw_rep .sent') || {}).textContent || '', reads: document.querySelectorAll('#mw_rep .readline').length }));
     ok('   today\'s plan (3 lines) can be changed; yesterday\'s report is shown as sent (✎ changed 2 times)', st.plan === 3 && /Sent/.test(st.sent) && /changed 2 times/.test(st.sent) && st.reads >= 3, st);
@@ -102,7 +102,7 @@ const SAPW = 'Super#Admin2040', PW = 'Nashik#Road848!', VPW = 'Audit#PassView9!x
     // ================= the Admin: sujit =================
     U = await open('sujit@rcl.test', PW); p = U.p;
     st = await p.evaluate(() => ({ pages: [...document.querySelectorAll('#eng_pages .navbtn')].map(x => x.textContent.trim()), title: document.getElementById('pg_title').textContent }));
-    ok('the Admin: the views in his menu, no set-up', st.pages.join() === 'My work,Dashboard,Strip chart,All reports,Reports,Performance', st);
+    ok('the Admin: the views in his menu, no set-up', st.pages.join() === 'My work,Dashboard,Strip chart,RFI,Hindrances,All reports,Reports,Performance', st);
     if (st.title !== 'Dashboard') await page(p, 'dashboard');      // (the Portal may open the page he had last)
     await until(() => p.evaluate(() => document.querySelectorAll('#db_cards .wcard').length > 0), 20000);
     st = await p.evaluate(() => ({ date: document.getElementById('db_date').textContent, chips: [...document.querySelectorAll('#db_chips .wchip')].map(x => x.innerText.replace(/\s+/g, ' ')), tiles: [...document.querySelectorAll('#db_tiles .tile')].map(x => x.innerText.replace(/\s+/g, ' ')), cards: [...document.querySelectorAll('#db_cards .wcard')].map(x => x.querySelector('h3').textContent + ':' + x.querySelector('.st').textContent), attn: (document.getElementById('db_attn_b') || {}).textContent || '' }));
