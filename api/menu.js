@@ -8,6 +8,8 @@ const PAGES = [
   { key: 'mywork', name: 'My work', who: 'all' },
   { key: 'dashboard', name: 'Dashboard', who: 'view' },
   { key: 'strip', name: 'Strip chart', who: 'all' },
+  { key: 'rfi', name: 'RFI', who: 'all' },      // (09-11-2026) the IE's approval of a layer
+  { key: 'hind', name: 'Hindrances', who: 'all' },      // (09-11-2026) the evidence for an extension of time
   { key: 'allreports', name: 'All reports', who: 'view' },
   { key: 'reports', name: 'Reports', who: 'view' },
   { key: 'perf', name: 'Performance', who: 'view' },

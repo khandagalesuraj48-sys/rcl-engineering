@@ -146,6 +146,7 @@
   .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13.5px; align-items: center; }
   .legend i { display: inline-block; width: 18px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; border: 1px solid rgba(0,0,0,.15); }
   .legend i.ol { background: none; border: 2px solid #111; } .legend i.prog { background: none; border: 2px dashed #E0A800; }
+  .legend i.rfi { background: repeating-linear-gradient(45deg, #fff 0 3px, #3B4650 3px 5px); }
   .lbar { height: 10px; border-radius: 6px; background: #EEF1F4; overflow: hidden; border: 1px solid #DDE2E7; }
   .lbar > span { display: block; height: 100%; border-radius: 6px; }
   .lrow { display: grid; grid-template-columns: minmax(150px, 1.2fr) 2fr minmax(150px, 1fr); gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid #EEF0F2; }
@@ -210,6 +211,8 @@
     .lrow { grid-template-columns: 1fr; gap: 4px; } .lrow .r { text-align: left; }
     .rows .r, .rows .r.l3 { grid-template-columns: 1fr 1fr; }
   }
+  .rulebar { margin: 10px 0; padding: 10px 14px; border-radius: 12px; background: #F1F4F8; font-size: 14px; } .rulebar.on { background: #FFF4D6; }
+  .st-Pending { color: var(--warn); } .st-Approved { color: var(--good); } .st-Rejected { color: var(--bad); } .st-Cancelled, .st-Closed { color: var(--muted); } .st-Open { color: var(--bad); }
   @media print { .side, .topbar, .noprint, .datebar, #remind { display: none !important; } main { padding: 0; max-width: none; } .panel { break-inside: avoid; border: 0; } }
   /* INSIDE ANOTHER MODULE'S SCREEN (Mechanical shows this page in its middle part – its own menu, top bar and Logout are there) */
   html.embed, html.embed body { background: transparent; }
@@ -311,13 +314,40 @@
       <div id="pg_perf" hidden>
         <div class="bigdate">Who reported</div><div class="muted" id="pf_sub">people move between works – every report keeps the name of whoever sent it</div>
         <div class="bar noprint"><div class="field"><label for="pf_month">Month</label><input type="month" id="pf_month"></div></div>
+        <section class="tiles" id="pf_tiles"></section>
         <div class="pcards" id="pf_cards"></div>
+        <section class="panel"><h2>PPC – plan lines done as planned, week by week</h2><div id="pf_ppc"></div></section>
+        <section class="panel"><h2>Reasons for the work left – most often first</h2><div id="pf_why"></div></section>
         <section class="panel"><div style="display:flex;flex-wrap:wrap;gap:8px;align-items:baseline"><h2>Who sent each work's report, day by day</h2><span class="muted" style="margin-left:auto">initials = sender · red dot = missing</span></div><div class="tw" style="margin-top:8px"><table class="mtx"><thead id="pf_mhead"></thead><tbody id="pf_mrows"></tbody></table></div></section>
+      </div>
+
+      <!-- (09-11-2026, Engineering 2A) RFI – the IE's approval of a layer -->
+      <div id="pg_rfi" hidden>
+        <div class="bigdate">RFI – layer approval</div><div class="muted" id="rf_sub">a layer is asked for the IE's inspection; the Admin records the IE's answer</div>
+        <div class="rulebar" id="rf_rule"></div>
+        <div class="bar noprint">
+          <div class="tabs" id="rf_st" style="margin:0"><button type="button" data-s="Pending" aria-selected="true">Waiting</button><button type="button" data-s="Approved" aria-selected="false">Approved</button><button type="button" data-s="Rejected" aria-selected="false">Rejected</button><button type="button" data-s="" aria-selected="false">All</button></div>
+          <div class="field"><label for="rf_from">From</label><input type="date" id="rf_from"></div><div class="field"><label for="rf_to">To</label><input type="date" id="rf_to"></div>
+          <button type="button" class="btn" id="rf_go">Show</button><button type="button" class="btn" id="rf_print">Print</button><button type="button" class="btn primary" id="rf_new" style="margin-left:auto">+ Ask RFI</button>
+        </div>
+        <section class="panel" style="padding:0"><div class="tw" style="border:0"><table><thead><tr><th>RFI</th><th>Day</th><th>Work · layer</th><th>Side</th><th>Chainage</th><th>Status</th><th>IE's answer</th><th>Asked by</th><th class="noprint"></th></tr></thead><tbody id="rf_rows"></tbody></table></div></section>
+      </div>
+
+      <!-- (09-11-2026, Engineering 2A) HINDRANCES – the evidence for an extension of time -->
+      <div id="pg_hind" hidden>
+        <div class="bigdate">Hindrances</div><div class="muted" id="hd_sub">what stopped the work, where and for how many days – the evidence for an extension of time (EOT)</div>
+        <div class="bar noprint">
+          <div class="field"><label for="hd_from">From</label><input type="date" id="hd_from"></div><div class="field"><label for="hd_to">To</label><input type="date" id="hd_to"></div>
+          <button type="button" class="btn" id="hd_go">Show</button><button type="button" class="btn" id="hd_print">Print</button><button type="button" class="btn primary" id="hd_new" style="margin-left:auto">+ Add hindrance</button>
+        </div>
+        <section class="tiles" id="hd_tiles"></section>
+        <section class="panel" style="padding:0"><div class="tw" style="border:0"><table><thead><tr><th>No</th><th>From – to</th><th class="n">Days</th><th>Stretch</th><th>Side</th><th>Works stopped</th><th>What</th><th>Letter</th><th>Added by</th><th class="noprint"></th></tr></thead><tbody id="hd_rows"></tbody></table></div></section>
+        <section class="panel"><h2>Days of hindrance by work</h2><div class="tw" style="margin-top:8px"><table><thead><tr><th>Work</th><th class="n">Hindrances</th><th class="n">Days (in the period)</th><th class="n">Still on</th></tr></thead><tbody id="hd_works"></tbody></table></div></section>
       </div>
 
       <!-- SET-UP: the Super Admin fills everything (period by period, Active / Inactive) -->
       <div id="pg_setup" hidden>
-        <div class="tabs" id="su_tabs"><button type="button" data-t="road" aria-selected="true">Road (KML)</button><button type="button" data-t="side" aria-selected="false">Sides &amp; widths</button><button type="button" data-t="work" aria-selected="false">Works &amp; layers</button><button type="button" data-t="mix" aria-selected="false">Mix design</button><button type="button" data-t="design" aria-selected="false">Design</button><button type="button" data-t="people" aria-selected="false">People &amp; works</button></div>
+        <div class="tabs" id="su_tabs"><button type="button" data-t="road" aria-selected="true">Road (KML)</button><button type="button" data-t="side" aria-selected="false">Sides &amp; widths</button><button type="button" data-t="work" aria-selected="false">Works &amp; layers</button><button type="button" data-t="mix" aria-selected="false">Mix design</button><button type="button" data-t="design" aria-selected="false">Design</button><button type="button" data-t="people" aria-selected="false">People &amp; works</button><button type="button" data-t="rule" aria-selected="false">RFI rule</button></div>
         <div id="su_road">
           <section class="panel"><h2>The road</h2><div id="rd_now" class="muted"></div>
             <div class="bar"><button type="button" class="btn primary" id="rd_pick">Choose the KML file</button><input type="file" id="rd_file" accept=".kml,application/vnd.google-earth.kml+xml" hidden></div>
@@ -332,6 +362,12 @@
           <section class="panel" id="ms_form" hidden><h2 id="mf_h"></h2><div id="mf_body"></div>
             <div class="grid" style="margin-top:10px"><div class="field"><label for="mf_from">Valid from *</label><input type="date" id="mf_from"></div><div class="field"><label for="mf_to">Valid to (empty = still running)</label><input type="date" id="mf_to"></div></div>
             <div class="bar"><button type="button" class="btn primary" id="mf_save">Save</button><button type="button" class="btn" id="mf_cancel">Cancel</button></div></section>
+        </div>
+        <div id="su_rule" hidden>
+          <section class="panel"><h2>RFI rule – the next layer waits for the IE</h2>
+            <p class="muted" style="margin:4px 0 10px">On: a plan or a report of a layer is refused on the chainage where the layer below it was reported done (from the day below) and its RFI is not approved yet. Work reported before that day never stops anything. The Super Admin can still let a line through, with a reason (kept).</p>
+            <div class="grid"><div class="field"><label for="ru_on">Rule</label><select id="ru_on"><option value="0">Off</option><option value="1">On</option></select></div><div class="field"><label for="ru_from">On from (day)</label><input type="date" id="ru_from"></div></div>
+            <div class="bar"><button type="button" class="btn primary" id="ru_save">Save</button><span class="muted" id="ru_now"></span></div></section>
         </div>
         <div id="su_people" hidden>
           <section class="panel"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><h2>People and their works</h2><button type="button" class="btn primary" id="pp_new" style="margin-left:auto">+ Add person</button></div>
@@ -496,14 +532,16 @@
 
   /* ---------------- SIGN-IN THROUGH THE PORTAL (as the Store) ---------------- */
   let PORTAL = '';
-  const PAGES = { mywork: 'My work', dashboard: 'Dashboard', strip: 'Strip chart', allreports: 'All reports', reports: 'Reports', perf: 'Performance', setup: 'Set-up (Super Admin)' };
-  const WHO = { mywork: 'all', dashboard: 'view', strip: 'all', allreports: 'view', reports: 'view', perf: 'view', setup: 'super' };
+  const PAGES = { mywork: 'My work', dashboard: 'Dashboard', strip: 'Strip chart', rfi: 'RFI', hind: 'Hindrances', allreports: 'All reports', reports: 'Reports', perf: 'Performance', setup: 'Set-up (Super Admin)' };
+  const WHO = { mywork: 'all', dashboard: 'view', strip: 'all', rfi: 'all', hind: 'all', allreports: 'view', reports: 'view', perf: 'view', setup: 'super' };
   const mayOpen = p => WHO[p] === 'all' || (WHO[p] === 'view' && canView()) || (WHO[p] === 'super' && isSuper());
   const IC = {
     mywork: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
     dashboard: '<path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/>',
     strip: '<rect x="3" y="5" width="18" height="5" rx="1"/><rect x="3" y="14" width="18" height="5" rx="1"/><path d="M9 5v5M15 14v5"/>',
     allreports: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/>',
+    rfi: '<path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/>',
+    hind: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
     reports: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
     perf: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M17 11l2 2 4-4"/>',
     setup: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>' };
@@ -682,7 +720,7 @@
 
   async function loadInit() {
     const r = await eng({ action: 'init' });
-    S.today = r.today; S.dayAt = istNow().toISOString().slice(0, 10); S.masters = r.masters; S.people = r.people; S.assign = r.assign; S.reasons = r.reasons; S.sides = r.sides; S.road = r.road; S.remind = r.remind;
+    S.today = r.today; S.dayAt = istNow().toISOString().slice(0, 10); S.masters = r.masters; S.people = r.people; S.assign = r.assign; S.reasons = r.reasons; S.sides = r.sides; S.road = r.road; S.remind = r.remind; S.rfiRule = r.rfiRule;
     $('dl_reasons').innerHTML = S.reasons.map(t => '<option value="' + esc(t) + '">').join('');
     LOADED.ok();
   }
@@ -918,7 +956,8 @@
     if (b.disabled) return; b.disabled = true;
     try {
       const lines = [...document.querySelectorAll('#pl_lines .pline')].map(readLine);
-      const r = await eng({ action: 'planSave', day: D, email: S.mw.email || '', lines: lines, ver: old ? old.ver : 0 });
+      const r = await rfiSend({ action: 'planSave', day: D, email: S.mw.email || '', lines: lines, ver: old ? old.ver : 0 });
+      if (!r) return;
       toast('Plan saved: ' + lines.length + ' line' + (lines.length === 1 ? '' : 's') + ' for ' + showDay(D) + '.');
       replaceDay(r.doc); drawMyWork();
     } catch (e) { failed(e); } finally { b.disabled = false; }
@@ -937,13 +976,27 @@
     const extra = [...document.querySelectorAll('#rx_lines .xline')].map(readLine);
     b.disabled = true;
     try {
-      const r = await eng({ action: 'reportSave', day: X, email: S.mw.email || '', report: { lines: lines, extra: extra, note: $('rp_note').value }, ver: old ? old.ver : 0 });
+      const r = await rfiSend({ action: 'reportSave', day: X, email: S.mw.email || '', report: { lines: lines, extra: extra, note: $('rp_note').value }, ver: old ? old.ver : 0 });
+      if (!r) return;
       toast(old && old.report ? 'Report changed (✎).' : 'Report sent – thank you.');
       replaceDay(r.doc); S.mw.editRep = false;
       if (mwOwn() && S.remind && S.remind.day === X) { S.remind.due = false; drawRemind(); }
       try { S.reasons = (await eng({ action: 'reasons' })).reasons; $('dl_reasons').innerHTML = S.reasons.map(t => '<option value="' + esc(t) + '">').join(''); } catch (e) { /* later */ }
       drawMyWork();
     } catch (e) { failed(e); } finally { b.disabled = false; }
+  }
+  // (09-11-2026) a save the RFI rule stops: the Super Admin may let it through with a reason (kept); anybody else is told what is missing
+  async function rfiSend(body) {
+    try { return await eng(body); }
+    catch (e) {
+      if (!(e && e.code === 'rfi' && isSuper())) throw e;
+      const go = await ask('The layer below is not approved by the IE', '<p>' + esc(e.message) + '</p><div class="field wide"><label for="rs_why">Let it through anyway – why? (kept in the record)</label><input id="rs_why" maxlength="200"></div>',
+        [{ label: 'Cancel', value: false }, { label: 'Let it through', value: true, primary: true }], true);
+      const why = (($('rs_why') || {}).value || '').trim();
+      if (!go) return null;
+      if (why.length < 3) { toast('Write why it is let through.', true); return null; }
+      return await eng(Object.assign({}, body, { rfiSkip: why }));
+    }
   }
   function replaceDay(doc) { const L = S.mw.data.days, i = L.findIndex(y => y.day === doc.day); if (i > -1) L[i] = doc; else L.push(doc); }
   // a day's report as text (to send on WhatsApp)
@@ -1076,23 +1129,26 @@
     const step = window.innerWidth < 700 ? 2000 : 4000, chunks = [];
     for (let a = Math.floor(r.range.from / 1000) * 1000; a < r.range.to; a += step) chunks.push([Math.max(a, r.range.from), Math.min(a + step, r.range.to)]);
     $('sc_chart').innerHTML = chunks.map(c => {
-      const range = { from: c[0], to: c[1] }, bars = [], prog = [], outl = [];
-      r.sides.forEach(sd => { (r.strip[sd] || { pieces: [] }).pieces.forEach(p => { if (p.to > c[0] && p.from < c[1]) bars.push({ from: Math.max(p.from, c[0]), to: Math.min(p.to, c[1]), side: sd, fill: col(p.layer), title: name(p.layer) + ' · ' + showCh(p.from) + '–' + showCh(p.to) }); });
+      const range = { from: c[0], to: c[1] }, bars = [], prog = [], outl = [], open = [];
+      r.sides.forEach(sd => { (r.strip[sd] || { pieces: [] }).pieces.forEach(p => { if (p.to > c[0] && p.from < c[1]) bars.push({ from: Math.max(p.from, c[0]), to: Math.min(p.to, c[1]), side: sd, fill: col(p.layer), title: name(p.layer) + ' · ' + showCh(p.from) + '–' + showCh(p.to) });
+          (p.open || []).forEach(o => { if (o[1] > c[0] && o[0] < c[1]) open.push({ from: Math.max(o[0], c[0]), to: Math.min(o[1], c[1]), side: sd, title: name(p.layer) + ' · ' + showCh(o[0]) + '–' + showCh(o[1]) + ' · IE approval (RFI) not recorded' }); }); });
         (r.yesterday[sd] || []).forEach(p => { if (p.to > c[0] && p.from < c[1]) outl.push({ from: Math.max(p.from, c[0]), to: Math.min(p.to, c[1]), side: sd, title: 'Done on ' + showDay(r.day) + ': ' + name(p.layer) + ' · ' + showCh(p.from) + '–' + showCh(p.to) }); });
         (r.program[sd] || []).forEach(p => { if (p.to > c[0] && p.from < c[1]) prog.push({ from: Math.max(p.from, c[0]), to: Math.min(p.to, c[1]), side: sd, title: 'Program of ' + showDay(r.next) + ': ' + name(p.layer) + ' · ' + showCh(p.from) + '–' + showCh(p.to) }); }); });
-      return stripSvg(range, r.sides, bars, outl, prog);
+      return stripSvg(range, r.sides, bars, outl, prog, open);
     }).join('');
-    $('sc_legend').innerHTML = '<b style="font:700 18px var(--display);margin-right:6px">INDEX</b>' + r.layers.slice().reverse().map(l => '<span><i style="background:' + col(l.id) + '"></i>' + esc(l.name) + '</span>').join('') + '<span><i class="ol"></i>Done on ' + esc(showDay(r.day)) + '</span><span><i class="prog"></i>Program of ' + esc(showDay(r.next)) + '</span>';
+    $('sc_legend').innerHTML = '<b style="font:700 18px var(--display);margin-right:6px">INDEX</b>' + r.layers.slice().reverse().map(l => '<span><i style="background:' + col(l.id) + '"></i>' + esc(l.name) + '</span>').join('') + '<span><i class="ol"></i>Done on ' + esc(showDay(r.day)) + '</span><span><i class="prog"></i>Program of ' + esc(showDay(r.next)) + '</span>' + (r.rfi ? '<span><i class="rfi"></i>Striped = IE approval (RFI) not recorded</span>' : '');
     $('sc_layers').innerHTML = r.stats.slice().reverse().map(s => '<div class="lrow"><div>' + esc(s.name) + '</div><div class="lbar"><span style="width:' + Math.min(100, s.pct || 0) + '%;background:' + col(s.id) + '"></span></div><div class="r"><b>' + (s.pct === null ? '–' : fmt(s.pct) + '%') + '</b><small>' + Object.keys(s.per).map(k => esc(k === 'Median' ? 'M' : k === 'LHS' ? 'L' : k === 'RHS' ? 'R' : k) + ' ' + fmt(s.per[k], 2)).join(' · ') + ' km' + (s.month ? ' · +' + fmt(s.month, 2) + ' this month' : '') + '</small></div></div>').join('') +
       (r.sidesSet ? '' : '<p class="muted">The sides and their stretches are not set yet (Set-up → Sides &amp; widths): the per cent is of the whole road.</p>');
   }
-  function stripSvg(range, sides, bars, outl, prog) {
+  function stripSvg(range, sides, bars, outl, prog, open) {
     const W = Math.max(300, $('sc_chart').clientWidth || 1000), L = 56, Wd = W - L - 6, lh = 30, top = 20, H = top + sides.length * (lh + 6) + 4, len = Math.max(1, range.to - range.from);
     const x = v => L + (v - range.from) / len * Wd, wd = (a, b) => Math.max(1.5, x(b) - x(a)), y = s => top + sides.indexOf(s) * (lh + 6);
     let g = '<svg class="strip" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(showCh(range.from)) + ' to ' + esc(showCh(range.to)) + '" style="margin-bottom:8px">';
     for (let v = Math.ceil(range.from / 200) * 200; v <= range.to; v += 200) { const big = v % 1000 === 0; g += '<line x1="' + x(v) + '" x2="' + x(v) + '" y1="' + (top - (big ? 7 : 4)) + '" y2="' + (top - 1) + '" stroke="#8D99A3"/>' + (big ? '<text x="' + x(v) + '" y="' + (top - 9) + '" font-size="11" text-anchor="' + (x(v) - L < 24 ? 'start' : L + Wd - x(v) < 24 ? 'end' : 'middle') + '" fill="#3B4650">' + showCh(v) + '</text>' : ''); }
     sides.forEach(s => { g += '<text x="' + (L - 6) + '" y="' + (y(s) + lh / 2 + 4) + '" text-anchor="end" font-size="11" font-weight="700" fill="#3B4650">' + esc(s) + '</text><rect x="' + L + '" y="' + y(s) + '" width="' + Wd + '" height="' + lh + '" fill="#fff" stroke="#3B4650" stroke-width=".8"/>'; });
     bars.forEach(b => { if (sides.indexOf(b.side) > -1) g += '<rect x="' + x(b.from) + '" y="' + (y(b.side) + 1) + '" width="' + wd(b.from, b.to) + '" height="' + (lh - 2) + '" fill="' + b.fill + '"><title>' + esc(b.title) + '</title></rect>'; });
+    if ((open || []).length) g += '<defs><pattern id="rfiOpen" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="rgba(255,255,255,.55)"/><rect width="2" height="6" fill="rgba(0,0,0,.45)"/></pattern></defs>';
+    (open || []).forEach(b => { if (sides.indexOf(b.side) > -1) g += '<rect x="' + x(b.from) + '" y="' + (y(b.side) + 1) + '" width="' + wd(b.from, b.to) + '" height="' + (lh - 2) + '" fill="url(#rfiOpen)"><title>' + esc(b.title) + '</title></rect>'; });
     outl.forEach(b => { if (sides.indexOf(b.side) > -1) g += '<rect x="' + x(b.from) + '" y="' + (y(b.side) + 2) + '" width="' + wd(b.from, b.to) + '" height="' + (lh - 4) + '" fill="none" stroke="#111" stroke-width="2.2"><title>' + esc(b.title) + '</title></rect>'; });
     prog.forEach(b => { if (sides.indexOf(b.side) > -1) g += '<rect x="' + x(b.from) + '" y="' + (y(b.side) - 1) + '" width="' + wd(b.from, b.to) + '" height="' + (lh + 2) + '" fill="none" stroke="#E0A800" stroke-width="2.2" stroke-dasharray="6 4"><title>' + esc(b.title) + '</title></rect>'; });
     return g + '</svg>';
@@ -1153,12 +1209,153 @@
     const r = await eng({ action: 'perf', from: from, to: to }); S.pf = r;
     $('pf_cards').innerHTML = r.people.map(p => '<div class="pcard"><div class="ini">' + esc(ini(p.name)) + '</div><div><h3>' + esc(p.name) + '</h3><p>' + p.sent + ' report' + (p.sent === 1 ? '' : 's') + ' sent of ' + p.due + (p.missing ? ' · <span class="st-No">' + p.missing + ' missing</span>' : '') + (p.edits ? ' · ' + p.edits + ' correction' + (p.edits > 1 ? 's' : '') : '') + (p.late ? ' · ' + p.late + ' late' : '') + (p.last ? ' · last ' + esc(when(p.last)) : '') + '</p>' +
       (p.planned > 0 ? '<p><b style="color:var(--ink)">' + p.pct + '%</b> of his plan done · ' + fmt(p.done) + ' / ' + fmt(p.planned) + ' m' + (p.outside ? ' · +' + fmt(p.outside) + ' m outside the plan' : '') + '</p>' : '') +
+      (p.ppc && p.ppc.lines ? '<p><b style="color:var(--ink)">PPC ' + p.ppc.pct + '%</b> · ' + p.ppc.done + ' of ' + p.ppc.lines + ' plan line' + (p.ppc.lines === 1 ? '' : 's') + ' done as planned</p>' : '') +
       '<div>' + Object.keys(p.works).map(k => '<span class="chip">' + esc(k) + ' ' + p.works[k] + '</span>').join('') + '</div></div></div>').join('') || '<div class="empty">Nobody had a report to send in this month.</div>';
+    // (09-11-2026) PPC – of the plan lines of the reported days, how many were done as planned; the reasons for the work left
+    const pc = r.ppc || { lines: 0 };
+    $('pf_tiles').innerHTML = '<div class="tile"><small>PPC – done as planned</small><b>' + (pc.lines ? pc.pct + '%' : '–') + '</b><span>' + (pc.lines ? pc.done + ' of ' + pc.lines + ' plan lines' : 'no plan lines reported') + '</span></div>';
+    $('pf_ppc').innerHTML = (r.weeks || []).map(w => '<div class="lrow"><div>' + esc(showDay(w.from)) + ' – ' + esc(showDay(w.to)) + '</div><div class="lbar"><span style="width:' + (w.pct || 0) + '%;background:var(--blue)"></span></div><div class="r"><b>' + (w.lines ? w.pct + '%' : '–') + '</b><small>' + (w.lines ? w.done + ' / ' + w.lines : '') + '</small></div></div>').join('') || '<div class="muted">–</div>';
+    $('pf_why').innerHTML = (r.reasons || []).map(x => '<div class="readline">' + esc(x.text) + ' <span class="muted">· ' + x.times + ' time' + (x.times > 1 ? 's' : '') + ' · ' + esc(x.people.join(', ')) + '</span></div>').join('') || '<div class="muted">No reasons – nothing was left.</div>';
     $('pf_mhead').innerHTML = '<tr><th>Work</th>' + r.days.map(d => '<th>' + dt(d).getUTCDate() + '</th>').join('') + '</tr>';
     $('pf_mrows').innerHTML = r.works.map(w => '<tr><td>' + esc(w.name) + '</td>' + r.days.map(d => { const c = w.days[d]; if (!c) return '<td></td>';
       return '<td title="' + esc(showDay(d) + ': ' + c.senders.join(', ') + (c.missing.length ? ' · missing: ' + c.missing.join(', ') : '')) + '">' + c.senders.map(n => '<span class="muted">' + esc(ini(n)) + '</span>').join(' ') + (c.missing.length ? ' <span class="dot">•</span>' : '') + '</td>'; }).join('') + '</tr>').join('') || '<tr><td class="empty">–</td></tr>';
   };
   $('pf_month').addEventListener('change', () => LOAD.perf().catch(failed));
+
+  /* ================= (09-11-2026, Engineering 2A) RFI – the IE's approval of a layer ================= */
+  S.rf = { st: 'Pending', data: null }; S.hd = null;
+  const chTxt = (a, b) => a === null || a === undefined ? '' : showCh(a) + ' – ' + showCh(b);
+  const ruleText = r => !r ? 'This needs one database step first: the Super Admin runs sql/eng_step3_qc_hindrance.sql once in the Engineering Supabase.'
+    : r.on ? 'RFI rule ON from ' + longDay(r.from) + ': a layer is not planned or reported where the layer below it is done and its RFI is not approved yet.' : 'RFI rule is off – the Super Admin switches it on in Set-up → RFI rule.';
+  LOAD.rfi = async () => {
+    if (!$('rf_to').value) { $('rf_to').value = S.today; $('rf_from').value = addDays(S.today, -89); }
+    $('rf_rows').innerHTML = '<tr><td colspan="9" class="empty">…</td></tr>';
+    const r = await eng({ action: 'rfiList', from: $('rf_from').value, to: $('rf_to').value, status: S.rf.st }); S.rf.data = r;
+    $('rf_rule').textContent = r.missing ? r.missing : ruleText(r.rule); $('rf_rule').className = 'rulebar' + (r.rule && r.rule.on ? ' on' : '');
+    $('rf_new').hidden = !!r.missing;
+    $('rf_rows').innerHTML = r.rows.map(x => { const mine = x.asked_by === S.me.user.email, wait = x.status === 'Pending';
+      return '<tr><td><b>' + esc(x.no) + '</b></td><td>' + esc(showDay(x.day)) + '</td><td>' + esc(workName(x.work, x.day)) + (x.layer ? ' · ' + esc(layerName(x.work, x.layer, x.day)) : '') + '</td><td>' + esc(x.side || '–') + '</td>' +
+        '<td>' + (x.ch_from !== null && x.ch_from !== undefined ? esc(chTxt(x.ch_from, x.ch_to)) + '<br><small class="muted">' + fmt(x.ch_to - x.ch_from) + ' m</small>' : fmt(x.qty) + ' ' + esc(unitOf(x.work, x.day))) + (x.note ? '<br><small class="muted">' + esc(x.note) + '</small>' : '') + '</td>' +
+        '<td><b class="st-' + esc(x.status) + '">' + esc(wait ? 'Waiting' : x.status) + '</b></td>' +
+        '<td>' + (x.ie_day ? esc(showDay(x.ie_day)) + (x.ie_name ? ' · ' + esc(x.ie_name) : '') + (x.ie_ref ? '<br><small class="muted">' + esc(x.ie_ref) + '</small>' : '') + (x.ie_remark ? '<br><small>' + esc(x.ie_remark) + '</small>' : '') : '<span class="muted">–</span>') + '</td>' +
+        '<td>' + esc(x.asked_name || x.asked_by) + '<br><small class="muted">' + esc(when(x.asked_at)) + '</small></td><td class="noprint">' +
+        (wait && r.decide ? '<button type="button" class="btn small primary" data-rdec="' + esc(x.no) + '">IE\'s answer</button> ' : '') +
+        (wait && (mine || r.decide) ? '<button type="button" class="link" data-rchg="' + esc(x.no) + '">Change</button> <button type="button" class="link del" data-rcan="' + esc(x.no) + '">Cancel</button>' : '') + '</td></tr>'; }).join('')
+      || '<tr><td colspan="9" class="empty">' + esc(r.missing || 'No RFI here.') + '</td></tr>';
+  };
+  // the works a person may ask an RFI of: his own (the Admin and the Super Admin: every work)
+  function rfiWorks(d) {
+    const on = itemsOn('work', d), mine = S.assign.filter(a => a.email === S.me.user.email && a.active).map(a => a.work);
+    return Object.keys(on).filter(k => canView() || mine.indexOf(k) > -1).map(k => on[k]).sort((a, b) => a.data.sort - b.data.sort || a.data.name.localeCompare(b.data.name));
+  }
+  function rfiFill(v) {
+    const d = $('rq_day').value || S.today, w = workOn($('rq_work').value, d); if (!w) return;
+    const keepL = v ? v.layer : $('rq_layer').value, keepS = v ? v.side : $('rq_side').value, m = w.data.unit === 'm';
+    $('rq_layer').innerHTML = w.data.layers.map(l => '<option value="' + esc(l.key) + '"' + (l.key === keepL ? ' selected' : '') + '>' + esc(l.name) + (l.mm ? ' (' + l.mm + ' mm)' : '') + '</option>').join('');
+    $('rq_layer_w').hidden = !w.data.layers.length;
+    $('rq_side').innerHTML = (m ? '' : '<option value="">–</option>') + sidesFor(w, d).map(x => '<option value="' + esc(x) + '"' + (x === keepS ? ' selected' : '') + '>' + esc(sideLabel(x)) + '</option>').join('');
+    document.querySelectorAll('.rq-ch').forEach(x => { x.hidden = !m; }); $('rq_q_w').hidden = m;
+  }
+  // ask an RFI (old: change a waiting one; typed: what was typed before the server said no – the form opens again with it)
+  async function rfiForm(old, typed) {
+    const v = typed || (old ? { day: old.day, work: old.work, layer: old.layer, side: old.side, from: old.ch_from === null ? '' : showCh(old.ch_from), to: old.ch_to === null ? '' : showCh(old.ch_to), qty: old.ch_from === null ? old.qty : '', note: old.note } : { day: S.today });
+    const W = rfiWorks(v.day || S.today);
+    if (!W.length) { toast('No work is given to you – the Super Admin gives the works.', true); return; }
+    const html = '<div class="grid">' +
+      '<div class="field"><label for="rq_day">Day the work was finished</label><input type="date" id="rq_day" max="' + S.today + '" value="' + esc(v.day || S.today) + '"></div>' +
+      '<div class="field"><label for="rq_work">Work</label><select id="rq_work">' + W.map(w => '<option value="' + esc(w.item) + '"' + (v.work === w.item ? ' selected' : '') + '>' + esc(w.data.name) + '</option>').join('') + '</select></div>' +
+      '<div class="field" id="rq_layer_w"><label for="rq_layer">Layer</label><select id="rq_layer"></select></div>' +
+      '<div class="field"><label for="rq_side">Side</label><select id="rq_side"></select></div>' +
+      '<div class="field rq-ch"><label for="rq_from">Chainage from</label><input id="rq_from" placeholder="8+000" inputmode="decimal" value="' + esc(v.from || '') + '"></div>' +
+      '<div class="field rq-ch"><label for="rq_to">To</label><input id="rq_to" placeholder="8+500" inputmode="decimal" value="' + esc(v.to || '') + '"></div>' +
+      '<div class="field" id="rq_q_w"><label for="rq_qty">Quantity</label><input id="rq_qty" type="number" min="0" step="any" value="' + esc(v.qty === undefined || v.qty === null ? '' : v.qty) + '"></div>' +
+      '<div class="field wide"><label for="rq_note">Note</label><input id="rq_note" maxlength="300" value="' + esc(v.note || '') + '"></div></div>';
+    const p = ask(old ? 'Change ' + old.no : 'Ask RFI – the IE\'s inspection of a layer', html, [{ label: 'Cancel', value: false }, { label: old ? 'Save' : 'Ask RFI', value: true, primary: true }], true);
+    rfiFill(v); $('rq_work').onchange = () => rfiFill(null); $('rq_day').onchange = () => rfiFill(null);
+    if (!(await p)) return;
+    const g = id => ($(id) || {}).value || '', t = { day: g('rq_day'), work: g('rq_work'), layer: g('rq_layer'), side: g('rq_side'), from: g('rq_from'), to: g('rq_to'), qty: g('rq_qty'), note: g('rq_note') };
+    try {
+      const r = await eng(Object.assign({ action: 'rfiSave', no: old ? old.no : undefined, ver: old ? old.ver : undefined }, t));
+      toast((old ? 'Changed: ' : 'Asked: ') + r.rfi.no + '.'); LOAD.rfi().catch(failed);
+    } catch (e) { failed(e); if (e && e.code !== 'changed') rfiForm(old, t); }
+  }
+  async function rfiDecide(x) {
+    const html = '<p><b>' + esc(x.no) + '</b> · ' + esc(workName(x.work, x.day)) + (x.layer ? ' · ' + esc(layerName(x.work, x.layer, x.day)) : '') + (x.side ? ' · ' + esc(x.side) : '') + ' ' + esc(chTxt(x.ch_from, x.ch_to)) + '</p><div class="grid">' +
+      '<div class="field"><label for="rd_st">The IE</label><select id="rd_st"><option value="Approved">Approved</option><option value="Rejected">Rejected</option></select></div>' +
+      '<div class="field"><label for="rd_day">On</label><input type="date" id="rd_day" min="' + esc(x.day) + '" max="' + S.today + '" value="' + S.today + '"></div>' +
+      '<div class="field"><label for="rd_name">IE\'s name</label><input id="rd_name" maxlength="80"></div>' +
+      '<div class="field"><label for="rd_ref">RFI / letter no.</label><input id="rd_ref" maxlength="60"></div>' +
+      '<div class="field wide"><label for="rd_rem">Remark (why – when rejected)</label><input id="rd_rem" maxlength="300"></div></div>';
+    if (!(await ask('The IE\'s answer', html, [{ label: 'Cancel', value: false }, { label: 'Save', value: true, primary: true }], true))) return;
+    const g = id => ($(id) || {}).value || '';
+    try { const r = await eng({ action: 'rfiDecide', no: x.no, ver: x.ver, status: g('rd_st'), ie_day: g('rd_day'), ie_name: g('rd_name'), ie_ref: g('rd_ref'), ie_remark: g('rd_rem') }); toast(r.rfi.no + ': ' + r.rfi.status + '.'); LOAD.rfi().catch(failed); }
+    catch (e) { failed(e); }
+  }
+  $('rf_st').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; S.rf.st = b.dataset.s; $('rf_st').querySelectorAll('[data-s]').forEach(x => x.setAttribute('aria-selected', String(x === b))); LOAD.rfi().catch(failed); });
+  $('rf_go').addEventListener('click', () => { if ($('rf_from').value > $('rf_to').value) { toast('"From" must be before "to".', true); return; } LOAD.rfi().catch(failed); });
+  $('rf_print').addEventListener('click', () => window.print());
+  $('rf_new').addEventListener('click', () => rfiForm(null));
+  $('rf_rows').addEventListener('click', async e => {
+    const f = no => ((S.rf.data && S.rf.data.rows) || []).find(x => x.no === no);
+    const a = e.target.closest('[data-rdec]'); if (a) { rfiDecide(f(a.dataset.rdec)); return; }
+    const c = e.target.closest('[data-rchg]'); if (c) { rfiForm(f(c.dataset.rchg)); return; }
+    const k = e.target.closest('[data-rcan]'); if (!k) return;
+    const x = f(k.dataset.rcan);
+    if (!(await ask('Cancel ' + x.no + '?', '<p>It is kept, as Cancelled.</p>', [{ label: 'Keep it', value: false }, { label: 'Cancel the RFI', value: true, bad: true }]))) return;
+    try { await eng({ action: 'rfiCancel', no: x.no, ver: x.ver }); toast(x.no + ' cancelled.'); LOAD.rfi().catch(failed); } catch (er) { failed(er); }
+  });
+
+  /* ================= (09-11-2026, Engineering 2A) HINDRANCES ================= */
+  LOAD.hind = async () => {
+    if (!$('hd_to').value) { $('hd_to').value = S.today; $('hd_from').value = addDays(S.today, -89); }
+    $('hd_rows').innerHTML = '<tr><td colspan="10" class="empty">…</td></tr>';
+    const r = await eng({ action: 'hindList', from: $('hd_from').value, to: $('hd_to').value }); S.hd = r;
+    $('hd_new').hidden = !!r.missing;
+    $('hd_sub').textContent = 'what stopped the work, where and for how many days – the evidence for an extension of time (EOT) · ' + longDay(r.from) + ' to ' + longDay(r.to);
+    $('hd_tiles').innerHTML = '<div class="tile"><small>Hindrances</small><b>' + r.rows.length + '</b></div><div class="tile"><small>Still on</small><b>' + (r.open || 0) + '</b></div><div class="tile"><small>Days (in the period)</small><b>' + r.rows.reduce((a, h) => a + h.days, 0) + '</b><span>all of them added</span></div>';
+    $('hd_rows').innerHTML = r.rows.map(h => '<tr><td><b>' + esc(h.no) + '</b></td><td>' + esc(showDay(h.from_day)) + ' – ' + (h.to_day ? esc(showDay(h.to_day)) : '<b class="st-Open">still on</b>') + '</td><td class="n"><b>' + h.days + '</b></td>' +
+      '<td>' + (h.ch_from !== null && h.ch_from !== undefined ? esc(chTxt(h.ch_from, h.ch_to)) : 'whole road') + '</td><td>' + esc(h.side || 'every side') + '</td><td>' + (h.works.length ? h.works.map(w => esc(workName(w, h.from_day))).join(', ') : 'every work') + '</td>' +
+      '<td><b>' + esc(h.kind) + '</b>' + (h.detail ? '<br><small>' + esc(h.detail) + '</small>' : '') + '</td><td>' + esc(h.letter) + '</td><td>' + esc(h.created_name || h.created_by) + '</td>' +
+      '<td class="noprint">' + (h.created_by === S.me.user.email || canView() ? '<button type="button" class="link" data-hchg="' + esc(h.no) + '">' + (h.to_day ? 'Change' : 'Change / end it') + '</button>' : '') + '</td></tr>').join('')
+      || '<tr><td colspan="10" class="empty">' + esc(r.missing || 'No hindrance in this period.') + '</td></tr>';
+    $('hd_works').innerHTML = (r.works || []).map(w => '<tr><td>' + esc(w.name) + '</td><td class="n">' + w.count + '</td><td class="n"><b>' + w.days + '</b></td><td class="n">' + w.open + '</td></tr>').join('') || '<tr><td colspan="4" class="empty">–</td></tr>';
+  };
+  async function hindForm(old, typed) {
+    const v = typed || (old ? Object.assign({}, old, { ch_from: old.ch_from === null ? '' : showCh(old.ch_from), ch_to: old.ch_to === null ? '' : showCh(old.ch_to) }) : { from_day: S.today, works: [] });
+    const on = itemsOn('work', S.today), W = Object.keys(on).map(k => on[k]).sort((a, b) => a.data.sort - b.data.sort || a.data.name.localeCompare(b.data.name)), sel = new Set(v.works || []);
+    const sides = sideNamesOn(S.today).concat(['Both']);
+    const html = '<div class="grid">' +
+      '<div class="field"><label for="hq_from">From</label><input type="date" id="hq_from" max="' + S.today + '" value="' + esc(v.from_day || S.today) + '"></div>' +
+      '<div class="field"><label for="hq_to">To (empty = still on)</label><input type="date" id="hq_to" max="' + S.today + '" value="' + esc(v.to_day || '') + '"></div>' +
+      '<div class="field"><label for="hq_cf">Chainage from (empty = whole road)</label><input id="hq_cf" placeholder="8+000" inputmode="decimal" value="' + esc(v.ch_from || '') + '"></div>' +
+      '<div class="field"><label for="hq_ct">To</label><input id="hq_ct" placeholder="9+000" inputmode="decimal" value="' + esc(v.ch_to || '') + '"></div>' +
+      '<div class="field"><label for="hq_side">Side</label><select id="hq_side"><option value="">Every side</option>' + sides.map(x => '<option value="' + esc(x) + '"' + (v.side === x ? ' selected' : '') + '>' + esc(sideLabel(x)) + '</option>').join('') + '</select></div>' +
+      '<div class="field"><label for="hq_let">Letter no.</label><input id="hq_let" maxlength="80" value="' + esc(v.letter || '') + '"></div>' +
+      '<div class="field wide"><label for="hq_kind">What is it?</label><input id="hq_kind" maxlength="80" list="dl_hkinds" placeholder="e.g. land not handed over, utility shifting, rain" value="' + esc(v.kind || '') + '"></div>' +
+      '<div class="field wide"><label for="hq_det">Detail</label><input id="hq_det" maxlength="500" value="' + esc(v.detail || '') + '"></div></div>' +
+      '<p style="margin:10px 0 4px"><b>Works it stops</b> <span class="muted">(none ticked = every work)</span></p><div>' + W.map(w => '<label class="chip"><input type="checkbox" class="hq-w" value="' + esc(w.item) + '"' + (sel.has(w.item) ? ' checked' : '') + '> ' + esc(w.data.name) + '</label>').join('') + '</div>' +
+      '<datalist id="dl_hkinds">' + ((S.hd && S.hd.kinds) || []).map(k => '<option value="' + esc(k) + '">').join('') + '</datalist>';
+    if (!(await ask(old ? 'Change ' + old.no : 'Add a hindrance', html, [{ label: 'Cancel', value: false }, { label: 'Save', value: true, primary: true }], true))) return;
+    const g = id => ($(id) || {}).value || '';
+    const t = { from_day: g('hq_from'), to_day: g('hq_to'), ch_from: g('hq_cf'), ch_to: g('hq_ct'), side: g('hq_side'), letter: g('hq_let'), kind: g('hq_kind'), detail: g('hq_det'), works: [...document.querySelectorAll('.hq-w:checked')].map(c => c.value) };
+    try { const r = await eng(Object.assign({ action: 'hindSave', no: old ? old.no : undefined, ver: old ? old.ver : undefined }, t)); toast((old ? 'Changed: ' : 'Added: ') + r.hindrance.no + '.'); LOAD.hind().catch(failed); }
+    catch (e) { failed(e); if (e && e.code !== 'changed') hindForm(old, t); }
+  }
+  $('hd_go').addEventListener('click', () => { if ($('hd_from').value > $('hd_to').value) { toast('"From" must be before "to".', true); return; } LOAD.hind().catch(failed); });
+  $('hd_print').addEventListener('click', () => window.print());
+  $('hd_new').addEventListener('click', () => hindForm(null));
+  $('hd_rows').addEventListener('click', e => { const b = e.target.closest('[data-hchg]'); if (b) hindForm(((S.hd && S.hd.rows) || []).find(h => h.no === b.dataset.hchg)); });
+
+  /* ---- Set-up → RFI rule (the Super Admin) ---- */
+  function drawRule() {
+    const r = S.rfiRule;
+    $('ru_on').value = r && r.on ? '1' : '0'; $('ru_from').value = r && r.from ? r.from : S.today;
+    $('ru_now').textContent = !r ? 'This needs one database step first: sql/eng_step3_qc_hindrance.sql' : r.on ? 'Now: on from ' + showDay(r.from) : 'Now: off';
+  }
+  $('ru_save').addEventListener('click', async () => {
+    try { const r = await eng({ action: 'rfiRule', on: $('ru_on').value === '1', from: $('ru_from').value }); S.rfiRule = r.rule; drawRule(); toast('RFI rule saved: ' + (r.rule.on ? 'on from ' + showDay(r.rule.from) : 'off') + '.'); }
+    catch (e) { failed(e); }
+  });
 
   /* ================= SET-UP (the Super Admin) ================= */
   LOAD.setup = async () => { await loadInit(); suTab(S.su.tab); };
@@ -1168,9 +1365,9 @@
     mix: 'A mix design: what goes into one unit (e.g. per cum). Saved = it applies from its "valid from" date.', design: 'A design (e.g. dowel bar, tie bar): its sizes. Saved = it applies from its "valid from" date.' };
   function suTab(t) {
     S.su.tab = t; document.querySelectorAll('#su_tabs [data-t]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === t)));
-    $('su_road').hidden = t !== 'road'; $('su_people').hidden = t !== 'people'; $('su_master').hidden = ['side', 'work', 'mix', 'design'].indexOf(t) === -1;
+    $('su_road').hidden = t !== 'road'; $('su_people').hidden = t !== 'people'; $('su_rule').hidden = t !== 'rule'; $('su_master').hidden = ['side', 'work', 'mix', 'design'].indexOf(t) === -1;
     $('ms_form').hidden = true;
-    if (t === 'road') drawRoad(); else if (t === 'people') drawPeople(); else drawMasters(t);
+    if (t === 'road') drawRoad(); else if (t === 'people') drawPeople(); else if (t === 'rule') drawRule(); else drawMasters(t);
   }
   $('su_tabs').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) suTab(b.dataset.t); });
   // ---- the road from the KML ----

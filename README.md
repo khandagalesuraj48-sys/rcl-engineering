@@ -64,7 +64,7 @@ earlier progress is not known).
 | Every action (set-up, plan, report, views) and its access | `api/eng.js` |
 | The rules (lines, periods, figures, strip chart) | `lib/rules.js` |
 | Database, ticket check, sign-ins, activity record | `lib/db.js`, `lib/portal.js`, `lib/session.js`, `lib/activity.js` |
-| Database (run once in the Engineering Supabase) | `sql/eng_step1.sql`; `sql/eng_step2_usage.sql` (update-158: how full the database is – the Portal's Sites → Storage) |
+| Database (run once in the Engineering Supabase) | `sql/eng_step1.sql`; `sql/eng_step2_usage.sql` (update-158: how full the database is – the Portal's Sites → Storage); `sql/eng_step3_qc_hindrance.sql` (09-11-2026: RFI, hindrances) |
 
 ## A user's report only of today or yesterday (29-10-2026 – urgent; no database step)
 Asked: "admin ani super admin fkt back dated entry kru shakto baki konich nahi … modual wise"; his answer for Engineering: a user's report
@@ -98,6 +98,35 @@ when it changed. The server answers it from one read in 2 s for every open page 
 its own save reads it again at once. My work (a plan or a report being typed) and the Set-up are never redrawn by it; a dialog open:
 after it. Tests: unit; rig `test/live.test.js` 7/7 (the Dashboard read again within 4 s of a save at its site, not of another site's;
 hidden tab; My work nothing); `api.test.js` 89/1 and `browser.test.js` 23/1 – as main. (The phone app has no Engineering screens yet – only its assistant reads Engineering.)
+
+## RFI, Hindrances and PPC – Engineering 2A (09-11-2026; DATABASE STEP 3)
+Asked: "ya code madhun plan ghe ani aple app la banwayla chalu kr … tyancha code use kru nko" – the ideas of the owner's list, written
+fresh for RCL (no code of any other project). His answer for the RFI: **the next layer is stopped on a chainage until the IE approves the
+layer below** (the Super Admin can let it through, with a reason).
+* **Database step 3** (once, in the Engineering Supabase → SQL Editor): `sql/eng_step3_qc_hindrance.sql` – it only adds (`eng_settings`,
+  `eng_numbers`, `eng_rfi`, `eng_hindrance`, the numbering function `eng_next_no`); safe to run again. Result: `Engineering step 3 done ·
+  tables 4 of 4`. Before it is run, everything works as before; the RFI and Hindrances pages say this step is needed; the rule is off.
+* **RFI** (page "RFI", everybody of Engineering): a person given a work asks for the IE's inspection of a stretch of a layer (day, work,
+  layer, side, chainage from–to, note) → RFI-0001 … (never given twice, also at the same moment). The Engineering Admin or the Super Admin
+  records the IE's answer: **Approved** (day, the IE's name, the RFI / letter number) or **Rejected** (why). While it waits, the person
+  who asked (or the Admin) may change or cancel it; every change is kept. Print = the RFI register.
+* **The RFI rule** (Set-up → RFI rule – the Super Admin: Off / On from a day): a plan line or a report line (done, or outside the plan) of
+  a layer is **refused** on the stretch where the layer just below it on that side (the strip chart's order: the works, then the layers)
+  was reported done from that day on and no **approved** RFI covers it – the message names the layer and the chainage. Where the layer
+  below was never reported in the ERP (the progress before the ERP, or before the rule's day) nothing is stopped. **The Super Admin** is
+  asked "Let it through anyway – why?"; with a reason the line is saved and the reason is kept in the activity record. Off = nothing
+  stopped (as before). **Strip chart:** with the rule on, a stretch done since the rule's day and not approved is **striped**.
+* **Hindrances** (page "Hindrances", everybody): from / to (empty = still on), the stretch (empty = whole road), side, the works it stops
+  (none = every work), what it is (what others typed is suggested), detail, letter number → H-0001 …; changed / ended by the person who
+  added it or the Admin (the earlier version kept). The list of a period: each one's days inside it, the ones still on, the days per
+  work – the evidence for an extension of time. Print.
+* **PPC – plan lines done as planned** (no database step): Performance shows the site's PPC, PPC week by week, each person's PPC, and
+  the reasons for the work left, most often first.
+* Tests: unit (the rules: the layer below on each side, stopped only where done and not approved, "Both", half a metre, the RFI and the
+  IE's answer, the hindrance checks and days, PPC; the API's access and step 3 only adds) – 24 / 24; rig `test/qc2a.test.js` 44 / 44
+  (after `api.test.js`); Chromium `test/qc2a.browser.test.js` 11 / 11 (pictures `test/shots/qc2a_*.png`); `api.test.js` 89 / 1 and
+  `browser.test.js` 23 / 1 – the same one line as on main.
+* The phone app: its own screens for RFI, Hindrances and PPC (rcl-mobile, the same actions).
 
 ## Settings (Vercel → the Engineering project → Settings → Environment Variables – never in a file)
 | Name | What |

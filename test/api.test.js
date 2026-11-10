@@ -60,9 +60,9 @@ const Y = add(TODAY, -1), Y2 = add(TODAY, -2);
   ok('/api/me: who, which site, which role', r.j.signedIn && r.j.site === 'S1' && r.j.user.role === 'user' && r.j.portal === P, r.j);
   // ---- the menu for the screen around it ----
   const menu = async c => ((await c.req('/menu.json')).j.pages || []).map(p => p.key).join(',');
-  ok('menu.json: a User sees My work and the Strip chart', await menu(U1.s) === 'mywork,strip');
-  ok('   the Admin also the dashboard, reports and performance; the Super Admin also the set-up', await menu(AD.s) === 'mywork,dashboard,strip,allreports,reports,perf' && await menu(SA.s) === 'mywork,dashboard,strip,allreports,reports,perf,setup');
-  ok('   nobody signed in yet: every page (the page opens only what he has)', await menu(client(E)) === 'mywork,dashboard,strip,allreports,reports,perf,setup');
+  ok('menu.json: a User sees My work, the Strip chart, RFI and Hindrances', await menu(U1.s) === 'mywork,strip,rfi,hind');      // (09-11-2026: RFI, Hindrances)
+  ok('   the Admin also the dashboard, reports and performance; the Super Admin also the set-up', await menu(AD.s) === 'mywork,dashboard,strip,rfi,hind,allreports,reports,perf' && await menu(SA.s) === 'mywork,dashboard,strip,rfi,hind,allreports,reports,perf,setup');
+  ok('   nobody signed in yet: every page (the page opens only what he has)', await menu(client(E)) === 'mywork,dashboard,strip,rfi,hind,allreports,reports,perf,setup');
 
   // ---- SET-UP: only the Super Admin ----
   let stations = [];
