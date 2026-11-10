@@ -16,7 +16,7 @@ Admin), each person's daily plan and report, the dashboard, the strip chart, all
 | Who | Pages |
 |---|---|
 | **User** | **My work** – his plan of today (and the next 7 days); his report of yesterday: for every plan line "Done as planned", "Other chainage / part" or "Not done", and why something is left; work outside the plan; a note. **Strip chart.** |
-| **Admin** | also **Dashboard** (the work of the day before against its plan, who sent it when, what needs attention, today's program), **All reports** (day by day, work by work: time, %, sender, ✎), **Reports** (daily, weekly, 15 days, monthly – print), **Performance** (reports sent / missing / late / corrected, plan against done, who sent each work day by day). He may look at a person's day, not change it. |
+| **Admin** | also **Dashboard** (the work of the day before against its plan, who sent it when, what needs attention, today's program), **All reports** (day by day, work by work: time, %, sender, ✎), **Reports** (daily, weekly, 15 days, monthly – print), **Performance** (reports sent / missing / late / corrected, plan against done, who sent each work day by day), **Measurement Book** (10-11-2026 – below). He may look at a person's day, not change it. |
 | **Super Admin** | also **Set-up**: Road (the KML), Sides & widths, Works & layers, Mix design, Design, People & works. He may change any plan or report. |
 
 * **A plan** is made for today or the next 7 days (the Super Admin: any day). It can be changed until the report of that day is
@@ -64,7 +64,7 @@ earlier progress is not known).
 | Every action (set-up, plan, report, views) and its access | `api/eng.js` |
 | The rules (lines, periods, figures, strip chart) | `lib/rules.js` |
 | Database, ticket check, sign-ins, activity record | `lib/db.js`, `lib/portal.js`, `lib/session.js`, `lib/activity.js` |
-| Database (run once in the Engineering Supabase) | `sql/eng_step1.sql`; `sql/eng_step2_usage.sql` (update-158: how full the database is – the Portal's Sites → Storage); `sql/eng_step3_qc_hindrance.sql` (09-11-2026: RFI, hindrances) |
+| Database (run once in the Engineering Supabase) | `sql/eng_step1.sql`; `sql/eng_step2_usage.sql` (update-158: how full the database is – the Portal's Sites → Storage); `sql/eng_step3_qc_hindrance.sql` (09-11-2026: RFI, hindrances); `sql/eng_step4_mb.sql` (10-11-2026: the Measurement Book – after step 3) |
 
 ## A user's report only of today or yesterday (29-10-2026 – urgent; no database step)
 Asked: "admin ani super admin fkt back dated entry kru shakto baki konich nahi … modual wise"; his answer for Engineering: a user's report
@@ -128,6 +128,43 @@ layer below** (the Super Admin can let it through, with a reason).
   `browser.test.js` 23 / 1 – the same one line as on main.
 * The phone app: its own screens for RFI, Hindrances and PPC (rcl-mobile, the same actions).
 
+## Measurement Book – Engineering 2B (10-11-2026; DATABASE STEP 4)
+His choice: "Measurement Book – पूर्ण झालेल्या layer चे काम आपोआप (chainage × रुंदी × जाडी) → MB (मोजले / तपासले) → RA bill साठी". Written
+fresh for RCL (no code of any other project).
+* **Database step 4** (once, in the Engineering Supabase → SQL Editor, AFTER step 3): `sql/eng_step4_mb.sql` – it only adds (`eng_mb`, the
+  function `eng_mb_put`); safe to run again; it stops with "Run sql/eng_step3_qc_hindrance.sql first" when step 3 is not there. Result:
+  `Engineering step 4 done · tables 1 of 1 · function 1 of 1`. Before it is run, everything works as before; the MB page says this step is needed.
+* **Who:** the page "Measurement Book" is the Engineering Admin's and the Super Admin's (as the reports); a User has no MB (every action
+  checked on the server).
+* **The lines, worked out by themselves** (`lib/rules.js` `mbOffer`): for a work + layer (+ one side or every side) and the days of the
+  reports, every stretch reported done (a plan line done, or work outside the plan) that is not in the MB yet – each with the masters of
+  the DAY it was done (a new period never changes the past):
+  * a work in **metres**: length (chainage) × width (the side's width at that place, that day) × thickness (the layer's mm, that day)
+    → **cum**; a layer with no thickness → length × width → **sq m**; a side with no width set there → the length → **m**. A width change
+    along the stretch makes two lines. **"Both"** = a line on LHS and one on RHS, each with its own width.
+  * a work in **sq m, cum or Nos**: the **quantity the person reported**, one line (never split; a "Both" stays one line).
+  * **Never measured twice** (checked on the server, also when two people save at the same moment – `eng_mb_put`, one save of a site
+    at a time): a stretch of the same work, layer and side already in an MB page (overlapping chainage) is not offered again; a report line
+    without chainage once. Two reports of the same stretch: the earlier day's is offered ("reported twice").
+  * **E1 (the RFI rule on from a day):** a stretch done from that day that no approved RFI of the SAME layer covers is "Not approved by the
+    IE" – not finished, so not measured; only the Super Admin may measure it, with a reason (on the line and in the activity record). The
+    approved RFI's number is shown on the line (also with the rule off).
+* **Measured** (the Admin or the Super Admin): the date of the MB page (on or after the work was done, not after today), the lines ticked,
+  the width / thickness actually measured where the quantity is worked out (a remark when it differs from the masters), a note →
+  **MB-0001 …** (`eng_next_no(site, 'MB')` of step 3 – never given twice; a save refused at the last step can leave a number unused).
+  Every figure is worked out again on the server.
+* **Check-measured** (date, remark) or **Sent back** (why) – by an Admin or the Super Admin who did NOT measure it (never one's own). Sent
+  back → the one who measured it (or the Super Admin) corrects it → measured again. While it waits, the one who measured it may change it.
+  **Check-measured = locked** (no change by anyone). Every change is kept (history, ✎ – "the page before").
+* **Register** (by the MB date, work, status), **one page** (print alone on A4 with the site's name), **the abstract for the RA bill**:
+  per work, layer and unit, the CHECK-MEASURED quantity of a period (by the MB page's date), up to the previous period, cumulative; the
+  pages of the period not check-measured yet are named, not counted. **The RA bill itself (BOQ rates, amounts) is not made here.**
+* Tests: unit (each unit's quantity; the version of the day; widths per side; "Both"; overlap / reported twice; E1; the measured line; the
+  abstract; the API's access; step 4 only adds; the step's messages) – 33 / 33 (+1 skipped: the real KML); rig `test/mb.test.js` 70 / 70
+  (after `api.test.js`); Chromium `test/mb.browser.test.js` 22 / 22 (pictures `test/shots/mb_*.png`, `mb_print.pdf`).
+* Not built now: the RA bill with BOQ rates, the planned line, weather / labour, PQC; the MB's screens in the phone app (rcl-mobile –
+  the same actions: mbOffer, mbSave, mbCheck, mbBack, mbList, mbGet, mbAbstract); the MB in the backup export and in the assistant's look-ups.
+
 ## Settings (Vercel → the Engineering project → Settings → Environment Variables – never in a file)
 | Name | What |
 |---|---|
@@ -167,6 +204,9 @@ timeout 300 node test/api.test.js             # rig (plain mode): Portal :3010, 
 timeout 400 node test/browser.test.js         # rig + Chromium, after api.test.js; pictures in test/shots/
 timeout 300 node test/inmech.test.js          # rig in gateway mode (GATEWAY=1 PORTAL=1 bash rig/all.sh), after api.test.js
 timeout 300 node test/cache155.test.js        # rig: the site's set-up read once for several looks, lost answers (own server :3041; SRC=<tree>)
+timeout 300 node test/qc2a.test.js            # rig, after api.test.js, step 3 applied: RFI, the RFI rule, hindrances, PPC
+timeout 300 node test/mb.test.js              # rig, after api.test.js, steps 3 and 4 applied: the Measurement Book
+NODE_PATH=/home/claude/test/node_modules timeout 400 node test/mb.browser.test.js      # rig + Chromium, after mb.test.js
 ```
 
 ## Fewer reads, no second copy (24-10-2026, with Mechanical's update-155)

@@ -61,8 +61,8 @@ const Y = add(TODAY, -1), Y2 = add(TODAY, -2);
   // ---- the menu for the screen around it ----
   const menu = async c => ((await c.req('/menu.json')).j.pages || []).map(p => p.key).join(',');
   ok('menu.json: a User sees My work, the Strip chart, RFI and Hindrances', await menu(U1.s) === 'mywork,strip,rfi,hind');      // (09-11-2026: RFI, Hindrances)
-  ok('   the Admin also the dashboard, reports and performance; the Super Admin also the set-up', await menu(AD.s) === 'mywork,dashboard,strip,rfi,hind,allreports,reports,perf' && await menu(SA.s) === 'mywork,dashboard,strip,rfi,hind,allreports,reports,perf,setup');
-  ok('   nobody signed in yet: every page (the page opens only what he has)', await menu(client(E)) === 'mywork,dashboard,strip,rfi,hind,allreports,reports,perf,setup');
+  ok('   the Admin also the dashboard, reports, performance and the Measurement Book; the Super Admin also the set-up', await menu(AD.s) === 'mywork,dashboard,strip,rfi,hind,allreports,reports,perf,mb' && await menu(SA.s) === 'mywork,dashboard,strip,rfi,hind,allreports,reports,perf,mb,setup');      // (10-11-2026: the Measurement Book)
+  ok('   nobody signed in yet: every page (the page opens only what he has)', await menu(client(E)) === 'mywork,dashboard,strip,rfi,hind,allreports,reports,perf,mb,setup');
 
   // ---- SET-UP: only the Super Admin ----
   let stations = [];

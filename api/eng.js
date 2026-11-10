@@ -611,6 +611,166 @@ A.hindSave = async (s, x, C) => {
   return { hindrance: numOut(r) };
 };
 
+/* ================= (10-11-2026) ENGINEERING 2B – THE MEASUREMENT BOOK =================
+ * His choice: "Measurement Book – पूर्ण झालेल्या layer चे काम आपोआप (chainage × रुंदी × जाडी) → MB (मोजले / तपासले) → RA bill साठी".
+ * The Engineering Admin or the Super Admin makes an MB page of one work and layer from the stretches REPORTED DONE in a period that
+ * are not in the MB yet (lib/rules.js mbOffer – the masters of the day each was done); it is saved as MEASURED (MB-0001 …); another
+ * Admin / the Super Admin – never the one who measured it – CHECK-MEASURES it (then it is locked) or SENDS IT BACK (why) → the one
+ * who measured it (or the Super Admin) corrects it → measured again. Every change is kept (history). The ABSTRACT for the RA bill:
+ * the check-measured quantity of a period, up to the previous period and cumulative. A User has no MB (the menu's "view").
+ * E1: a stretch not approved by the IE (the RFI rule on) is not finished → not measured; the Super Admin may, with a reason.
+ * sql/eng_step4_mb.sql – before it is run, everything works as before (the page says the step is needed). */
+const MB_COLS = 'no,work,layer,from_day,to_day,mb_day,status,note,lines,measured_by,measured_name,measured_at,back_by,back_name,back_at,back_why,checked_by,checked_name,checked_at,chk_day,chk_remark,created_by,created_at,updated_by,updated_at,history,ver';
+const mbOut = r => { r.ver = Number(r.ver); (r.lines || []).forEach(l => { ['from', 'to', 'len', 'w', 'mm', 'w_m', 'mm_m', 'qty', 'rep'].forEach(k => { if (l[k] !== null && l[k] !== undefined) l[k] = Number(l[k]); }); }); return r; };
+async function mbOf(site, no) { const r = ((await db('GET', 'eng_mb?select=' + MB_COLS + '&site=eq.' + enc(site) + '&no=eq.' + enc(no))) || [])[0]; if (!r) throw fail(404, 'This MB page is not there any more.', 'mb'); return mbOut(r); }
+const layerOf = (C, w, key, d) => { const v = workInfo(C, w, d), l = (v.layers || []).find(x => x.key === key); return l ? l.name : ''; };
+const mbName = (C, p) => { const w = workInfo(C, p.work, p.to_day || p.mb_day), l = layerOf(C, p.work, p.layer, p.to_day || p.mb_day); return w.name + (l ? ' · ' + l : ''); };
+// the work and layer of a page (checked against the masters: a layer keeps its key in every period of its work)
+function mbWork(C, x) {
+  const w = String(x.work || ''), vs = C.masters.filter(r => r.kind === 'work' && r.item === w);
+  if (!vs.length) throw fail(400, 'Pick the work.', 'work');
+  const layer = String(x.layer || ''), has = vs.some(r => (r.data.layers || []).length);
+  if (has && !vs.some(r => (r.data.layers || []).some(l => l.key === layer))) throw fail(400, 'Pick the layer of ' + vs[vs.length - 1].data.name + '.', 'layer');
+  if (!has && layer) throw fail(400, vs[vs.length - 1].data.name + ' has no layers.', 'layer');
+  return { work: w, layer: layer };
+}
+// what an MB page of a work and layer can hold: the stretches reported done in the period, less what the OTHER pages hold
+async function mbOfferOf(s, C, wl, sp, sides, no) {
+  const site = enc(s.site);
+  const [docs, pages, rfis, rule] = await Promise.all([
+    all('eng_days?select=day,email,name,plan,report&site=eq.' + site + '&day=gte.' + sp.from + '&day=lte.' + sp.to + '&report=not.is.null&order=day,email'),
+    all('eng_mb?select=no,lines&site=eq.' + site + '&work=eq.' + enc(wl.work) + '&layer=eq.' + enc(wl.layer) + '&order=no'),
+    all('eng_rfi?select=no,work,layer,side,ch_from,ch_to,status,ie_ref,ie_day&site=eq.' + site + '&work=eq.' + enc(wl.work) + '&layer=eq.' + enc(wl.layer) + '&status=eq.Approved&order=no').catch(e => { if (e && e.code === 'notinstalled3') return []; throw e; }),
+    ruleOf(s.site)]);
+  const mine = pages.find(p => p.no === no), claimed = [].concat(...pages.filter(p => p.no !== no).map(p => (p.lines || []).map(l => ({ side: l.side, from: l.from, to: l.to, src: l.src, no: p.no }))));
+  const o = R.mbOffer({ docs: docs, masters: C.masters, work: wl.work, layer: wl.layer, sides: sides, claimed: claimed, rfis: rfis, rule: rule, mine: mine ? mine.lines : [] });
+  return Object.assign(o, { rule: rule, pages: pages.length });
+}
+const mbSidesOf = (C, x, d) => { const v = String(x.side || ''); if (!v) return null; if (sidesOn(C, d).names.indexOf(v) < 0) throw fail(400, 'Pick the side (' + sidesOn(C, d).names.join(', ') + '), or every side.', 'side'); return [v]; };
+// the lines offered (for a new page – or, with no, for a change of that page: its own lines carry what was measured)
+A.mbOffer = async (s, x, C) => {
+  needView(s);
+  let wl, sp, old = null;
+  if (x.no) {
+    old = await mbOf(s.site, String(x.no));
+    if (old.status === 'Check-measured') throw fail(400, old.no + ' is check-measured – it is locked.', 'locked');
+    wl = { work: old.work, layer: old.layer }; sp = { from: old.from_day, to: old.to_day };
+  } else { wl = mbWork(C, x); sp = span(x, 400); if (sp.to > R.today()) throw fail(400, 'The reports are of work done – up to today.', 'date'); }
+  const o = await mbOfferOf(s, C, wl, sp, old ? null : mbSidesOf(C, x, sp.to), old ? old.no : null);
+  const had = {}; (old ? old.lines : []).forEach(l => { had[l.key] = l; });
+  const lines = o.lines.map(l => had[l.key] ? Object.assign(l, { inPage: true, w: had[l.key].w, mm: had[l.key].mm, remark: had[l.key].remark, skip: had[l.key].skip }) : l);
+  return { work: wl.work, layer: wl.layer, name: mbName(C, { work: wl.work, layer: wl.layer, to_day: sp.to }), unit: workInfo(C, wl.work, sp.to).unit, from: sp.from, to: sp.to,
+    rule: o.rule, lines: lines, skipped: o.skipped, gone: o.gone, no: old ? old.no : null, ver: old ? old.ver : 0, mb_day: old ? old.mb_day : null, note: old ? old.note : '' };
+};
+// MEASURED: a new page, or a change of a page not check-measured yet (by the one who measured it, or the Super Admin)
+A.mbSave = async (s, x, C) => {
+  needView(s);
+  const t = R.today();
+  let old = null, wl, sp;
+  if (x.no) {
+    old = await mbOf(s.site, String(x.no));
+    if (old.status === 'Check-measured') throw fail(400, old.no + ' is check-measured – it is locked.', 'locked');
+    if (old.measured_by !== s.email && !isSuper(s)) throw fail(403, 'Only the one who measured ' + old.no + ' (' + (old.measured_name || old.measured_by) + '), or the Super Admin, changes it.', 'access');
+    if (Number(x.ver) !== old.ver) throw fail(409, 'This MB page was changed meanwhile – it is loaded again: look and do it once more.', 'changed');
+    wl = { work: old.work, layer: old.layer }; sp = { from: old.from_day, to: old.to_day };
+  } else { wl = mbWork(C, x); sp = span(x, 400); if (sp.to > t) throw fail(400, 'The reports are of work done – up to today.', 'date'); }
+  const want = Array.isArray(x.lines) ? x.lines : [];
+  if (!want.length) throw fail(400, 'Tick at least one line to measure.', 'lines');
+  if (want.length > 300) throw fail(400, 'An MB page has 300 lines at most.', 'lines');
+  const o = await mbOfferOf(s, C, wl, sp, null, old ? old.no : null), by = {};
+  o.lines.forEach(l => { by[l.key] = l; });
+  const seen = {};
+  const lines = want.map((w, i) => {
+    const k = String((w && w.key) || '');
+    if (seen[k]) throw fail(400, 'Line ' + (i + 1) + ' is there twice.', 'lines'); seen[k] = 1;
+    if (!by[k]) throw fail(409, 'Line ' + (i + 1) + ' is not open to measure any more (its report, the masters or the MB changed meanwhile) – the list is loaded again: look and save once more.', 'changed');
+    return R.mbLine(by[k], w, isSuper(s), i + 1);
+  });
+  const d = R.day(x.mb_day, 'the MB page');
+  if (d > t) throw fail(400, 'The date of the MB page cannot be after today.', 'date');
+  const last = lines.reduce((a, l) => l.day > a ? l.day : a, '');
+  if (d < last) throw fail(400, 'The date of the MB page is on or after the work was done (' + R.showDay(last) + ').', 'date');
+  const now = nowIso(), note = R.txt(x.note, 300);
+  const row = Object.assign({}, old || { work: wl.work, layer: wl.layer, from_day: sp.from, to_day: sp.to, back_by: '', back_name: '', back_at: null, back_why: '', checked_by: '', checked_name: '', checked_at: null, chk_day: null, chk_remark: '', created_by: s.email, created_at: now, history: [] },
+    { mb_day: d, status: 'Measured', note: note, lines: lines, measured_by: s.email, measured_name: s.name, measured_at: now, updated_by: s.email, updated_at: now });
+  const what = !old ? 'Measured' : old.status === 'Sent back' ? 'Corrected and measured again' : 'Changed';
+  row.history = [Object.assign({ at: now, by: s.email, name: s.name, what: what }, old ? { was: { mb_day: old.mb_day, note: old.note, lines: old.lines, measured_by: old.measured_by } } : {})].concat(old ? old.history || [] : []);
+  delete row.ver; delete row.no;
+  const no = old ? old.no : 'MB-' + String(await nextNo(s.site, 'MB')).padStart(4, '0');
+  const r = await db('POST', 'rpc/eng_mb_put', { p_site: s.site, p_no: no, p_ver: old ? old.ver : 0, p_row: row });
+  if (r && r.clash) throw fail(409, 'Already in ' + r.clash.no + ' (' + (r.clash.side || '–') + (r.clash.from !== null && r.clash.from !== undefined ? ' ' + R.showCh(Number(r.clash.from)) + '–' + R.showCh(Number(r.clash.to)) : '') + ') – a stretch is never measured twice. The list is loaded again.', 'changed');
+  if (!r || r.changed || !r.no) throw fail(409, 'This MB page was changed meanwhile (or check-measured) – it is loaded again: look and do it once more.', 'changed');
+  const skip = lines.filter(l => l.skip).map(l => ({ line: l.ln, side: l.side, from: l.from, to: l.to, reason: l.skip }));
+  await activity(s.site, s.email, !old ? 'MB measured' : old.status === 'Sent back' ? 'MB measured again' : 'MB changed', no, Object.assign({ work: wl.work, layer: wl.layer, lines: lines.length, totals: R.mbTotals(lines) }, skip.length ? { notApproved: skip } : {}));
+  return { mb: mbOut(r) };
+};
+// CHECK-MEASURED (then locked) or SENT BACK (why): an Admin or the Super Admin who did not measure it
+async function mbDecide(s, x, how) {
+  needView(s);
+  const old = await mbOf(s.site, String(x.no || ''));
+  if (old.status !== 'Measured') throw fail(400, old.no + ' is ' + (old.status === 'Sent back' ? 'sent back – it is measured again first.' : 'check-measured already.'), 'status');
+  if (old.measured_by === s.email) throw fail(403, 'You measured ' + old.no + ' – it is ' + (how === 'check' ? 'check-measured' : 'sent back') + ' by another Admin or the Super Admin (never one\'s own).', 'own');
+  if (Number(x.ver) !== old.ver) throw fail(409, 'This MB page was changed meanwhile – it is loaded again: look and do it once more.', 'changed');
+  const now = nowIso(); let patch;
+  if (how === 'check') {
+    const d = R.day(x.chk_day, 'the check-measurement');
+    if (d > R.today()) throw fail(400, 'The day of the check-measurement cannot be after today.', 'date');
+    if (d < old.mb_day) throw fail(400, 'It is check-measured on or after the day it was measured (' + R.showDay(old.mb_day) + ').', 'date');
+    const remark = R.txt(x.remark, 300);
+    patch = { status: 'Check-measured', checked_by: s.email, checked_name: s.name, checked_at: now, chk_day: d, chk_remark: remark, history: [{ at: now, by: s.email, name: s.name, what: 'Check-measured', day: d, remark: remark }].concat(old.history || []) };
+  } else {
+    const why = R.txt(x.why, 300);
+    if (why.length < 3) throw fail(400, 'Write why it is sent back.', 'why');
+    patch = { status: 'Sent back', back_by: s.email, back_name: s.name, back_at: now, back_why: why, history: [{ at: now, by: s.email, name: s.name, what: 'Sent back', why: why }].concat(old.history || []) };
+  }
+  const r = await db('PATCH', 'eng_mb?site=eq.' + enc(s.site) + '&no=eq.' + enc(old.no) + '&ver=eq.' + old.ver + '&status=eq.Measured', Object.assign(patch, { updated_by: s.email, updated_at: now, ver: old.ver + 1 }), 'return=representation');
+  if (!r || !r.length) throw fail(409, 'This MB page was changed meanwhile – it is loaded again: look and do it once more.', 'changed');
+  return { mb: mbOut(r[0]), detail: how === 'check' ? { day: patch.chk_day, totals: R.mbTotals(old.lines) } : { why: patch.back_why } };
+}
+A.mbCheck = async (s, x, C) => {
+  needView(s);
+  const r = await mbDecide(s, x, 'check');
+  await activity(s.site, s.email, 'MB check-measured', r.mb.no, r.detail);
+  return { mb: r.mb };
+};
+A.mbBack = async (s, x, C) => {
+  needView(s);
+  const r = await mbDecide(s, x, 'back');
+  await activity(s.site, s.email, 'MB sent back', r.mb.no, r.detail);
+  return { mb: r.mb };
+};
+// THE MB REGISTER: the pages of a period (by the MB date), of a work, of a status – each with its lines counted and its quantity
+A.mbList = async (s, x, C) => {
+  needView(s);
+  const sp = span({ from: x.from || R.addDays(R.today(), -89), to: x.to || R.today() }, 800);
+  let q = 'eng_mb?select=' + MB_COLS + '&site=eq.' + enc(s.site) + '&mb_day=gte.' + sp.from + '&mb_day=lte.' + sp.to;
+  if (x.work) q += '&work=eq.' + enc(x.work);
+  if (['Measured', 'Sent back', 'Check-measured'].indexOf(x.status) > -1) q += '&status=eq.' + enc(x.status);
+  let rows;
+  try { rows = (await all(q + '&order=mb_day.desc,no.desc')).map(mbOut); } catch (e) { if (e && e.code === 'notinstalled4') return { missing: e.message, rows: [], from: sp.from, to: sp.to }; throw e; }
+  return { from: sp.from, to: sp.to, rows: rows.map(p => ({ no: p.no, work: p.work, layer: p.layer, name: mbName(C, p), from_day: p.from_day, to_day: p.to_day, mb_day: p.mb_day, status: p.status, lines: (p.lines || []).length,
+    totals: R.mbTotals(p.lines), measured_by: p.measured_by, measured_name: p.measured_name, measured_at: p.measured_at, back_name: p.back_name, back_why: p.back_why, checked_name: p.checked_name, chk_day: p.chk_day, ver: p.ver })) };
+};
+// one MB page as it is (to look at, print, change, check): its lines, its quantity, its history
+A.mbGet = async (s, x, C) => {
+  needView(s);
+  const p = await mbOf(s.site, String(x.no || ''));
+  return { mb: p, name: mbName(C, p), unit: workInfo(C, p.work, p.to_day).unit, totals: R.mbTotals(p.lines) };
+};
+// THE ABSTRACT for the RA bill: per work and layer, the check-measured quantity of the period, up to the previous period, cumulative
+A.mbAbstract = async (s, x, C) => {
+  needView(s);
+  const sp = span(x, 800);
+  let pages;
+  try { pages = (await all('eng_mb?select=no,work,layer,mb_day,status,lines&site=eq.' + enc(s.site) + '&mb_day=lte.' + sp.to + '&order=no')).map(mbOut); }
+  catch (e) { if (e && e.code === 'notinstalled4') return { missing: e.message, rows: [], from: sp.from, to: sp.to, waiting: [] }; throw e; }
+  const rows = R.mbAbstract(pages, sp.from, sp.to).map(g => { const w = workInfo(C, g.work, sp.to); return Object.assign(g, { name: w.name, layerName: layerOf(C, g.work, g.layer, sp.to), sort: w.sort, li: (w.layers || []).findIndex(l => l.key === g.layer) }); })
+    .sort((a, b) => a.sort - b.sort || a.name.localeCompare(b.name) || a.li - b.li || R.MB_UNITS.indexOf(a.unit) - R.MB_UNITS.indexOf(b.unit));
+  rows.forEach(g => { delete g.sort; delete g.li; });
+  const waiting = pages.filter(p => p.status !== 'Check-measured' && p.mb_day >= sp.from).map(p => ({ no: p.no, status: p.status, name: mbName(C, p) }));
+  return { from: sp.from, to: sp.to, rows: rows, waiting: waiting };
+};
+
 /* (28-10-2026) THE ASSISTANT'S LOOK-UPS ("AI la app cha main brain": Mechanical's Ask answers about Engineering too) – read only,
  * each through the look of this file with its own check of the person's access (the dashboard, the report and the performance:
  * the Admin and the Super Admin; the progress and his own days: everybody of Engineering) – lib/ailook.js makes them short. */
@@ -658,7 +818,7 @@ A.aiLook = async (s, x, C) => {
  * person saves shows within the owner's 2 seconds (02-10-2026), on any of Vercel's servers. EVERY SAVE reads it afresh, as before –
  * what is checked is always what the database has – and its end drops the shared read (also one that started during the save).
  * Per site: a site's read is never used for another. */
-const WRITES = new Set(['roadSave', 'masterSave', 'masterActive', 'personAdd', 'assignSave', 'planSave', 'reportSave', 'rfiRule', 'rfiSave', 'rfiDecide', 'rfiCancel', 'hindSave']);
+const WRITES = new Set(['roadSave', 'masterSave', 'masterActive', 'personAdd', 'assignSave', 'planSave', 'reportSave', 'rfiRule', 'rfiSave', 'rfiDecide', 'rfiCancel', 'hindSave', 'mbSave', 'mbCheck', 'mbBack']);
 const CTX = new Map();      // site → { at, p: the read (a promise) }
 const CTX_MS = 2000;
 async function ctxFor(site, fresh) {

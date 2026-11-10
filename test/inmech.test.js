@@ -44,7 +44,7 @@ const IST = 330 * 60000, TODAY = new Date(Date.now() + IST).toISOString().slice(
     await eng(p).evaluate(() => { window.__still = 1; });
     await app(p).evaluate(() => { const g = document.querySelector('#grp_mods .modgrp[data-mod="engineering"]'); if (g && !g.classList.contains('open')) g.querySelector('.grphead').click(); });
     const menu = await until(() => app(p).evaluate(() => { const L = [...document.querySelectorAll('#grp_mods .modgrp[data-mod="engineering"] .navbtn[data-page]')].map(x => x.textContent.trim()); return L.length ? L : null; }), 15000);
-    ok('Mechanical\'s dark menu: Engineering with the pages of this person (Admin – no set-up)', (menu || []).join() === 'My work,Dashboard,Strip chart,All reports,Reports,Performance', menu);
+    ok('Mechanical\'s dark menu: Engineering with the pages of this person (Admin – no set-up)', (menu || []).join() === 'My work,Dashboard,Strip chart,RFI,Hindrances,All reports,Reports,Performance,Measurement Book', menu);
     await app(p).evaluate(() => [...document.querySelectorAll('#grp_mods .modgrp[data-mod="engineering"] .navbtn[data-page]')].find(x => /Strip chart/.test(x.textContent)).click());
     const v2 = await until(async () => await eng(p).evaluate(() => document.body.dataset.loaded === 'strip' && window.__still === 1 && document.querySelectorAll('#sc_chart svg').length) && await app(p).evaluate(() => document.getElementById('page_title').textContent), 20000);
     ok('   Strip chart from Mechanical\'s menu: in place (Engineering\'s page is not loaded again)', v2 === 'Strip chart', v2);
