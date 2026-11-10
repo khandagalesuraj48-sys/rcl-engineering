@@ -102,7 +102,7 @@ const SAPW = 'Super#Admin2040', PW = 'Nashik#Road848!', VPW = 'Audit#PassView9!x
     // ================= the Admin: sujit =================
     U = await open('sujit@rcl.test', PW); p = U.p;
     st = await p.evaluate(() => ({ pages: [...document.querySelectorAll('#eng_pages .navbtn')].map(x => x.textContent.trim()), title: document.getElementById('pg_title').textContent }));
-    ok('the Admin: the views in his menu, no set-up', st.pages.join() === 'My work,Dashboard,Strip chart,RFI,Hindrances,All reports,Reports,Performance', st);
+    ok('the Admin: the views in his menu, no set-up', st.pages.join() === 'My work,Dashboard,Strip chart,RFI,Hindrances,All reports,Reports,Performance,Measurement Book', st);      // (10-11-2026: the Measurement Book)
     if (st.title !== 'Dashboard') await page(p, 'dashboard');      // (the Portal may open the page he had last)
     await until(() => p.evaluate(() => document.querySelectorAll('#db_cards .wcard').length > 0), 20000);
     st = await p.evaluate(() => ({ date: document.getElementById('db_date').textContent, chips: [...document.querySelectorAll('#db_chips .wchip')].map(x => x.innerText.replace(/\s+/g, ' ')), tiles: [...document.querySelectorAll('#db_tiles .tile')].map(x => x.innerText.replace(/\s+/g, ' ')), cards: [...document.querySelectorAll('#db_cards .wcard')].map(x => x.querySelector('h3').textContent + ':' + x.querySelector('.st').textContent), attn: (document.getElementById('db_attn_b') || {}).textContent || '' }));

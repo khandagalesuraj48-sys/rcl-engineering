@@ -214,6 +214,17 @@
   .rulebar { margin: 10px 0; padding: 10px 14px; border-radius: 12px; background: #F1F4F8; font-size: 14px; } .rulebar.on { background: #FFF4D6; }
   .st-Pending { color: var(--warn); } .st-Approved { color: var(--good); } .st-Rejected { color: var(--bad); } .st-Cancelled, .st-Closed { color: var(--muted); } .st-Open { color: var(--bad); }
   @media print { .side, .topbar, .noprint, .datebar, #remind { display: none !important; } main { padding: 0; max-width: none; } .panel { break-inside: avoid; border: 0; } }
+  /* (10-11-2026) the Measurement Book: its lines, one page as it is (printed alone on A4, with the site's name) */
+  .mbt td { vertical-align: top; } .mbt td input { min-height: 34px; padding: 4px 8px; width: 92px; } .mbt td input.mo-rem, .mbt td input.mo-skip { width: 190px; display: block; margin-top: 4px; }
+  .mbt tr.no td { background: #FFF6F4; } .mbt tr.unt td { opacity: .55; } .mbt tr.unt td:first-child { opacity: 1; }
+  .sh-top { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-end; border-bottom: 2px solid var(--ink); padding-bottom: 8px; margin-bottom: 10px; }
+  .sh-top .sh-st { margin-left: auto; font-size: 16px; }
+  .sh-meta { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px 16px; margin: 0 0 12px; }
+  .sh-meta small, .sh-sign small { display: block; color: var(--muted); font-size: 12px; font-weight: 600; } .sh-meta b { font-size: 15px; }
+  .sh-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0 6px; } .sh-sign > div { border-top: 1px solid var(--line); padding-top: 8px; } .sh-sign span { display: block; color: var(--muted); font-size: 13px; }
+  @page mbA4 { size: A4 portrait; margin: 12mm; }
+  @media print { body.print-mb main > :not(#pg_mb), body.print-mb #pg_mb > :not(#mb_sheet), body.print-mb #toast { display: none !important; }
+    body.print-mb #mb_sheet { page: mbA4; padding: 0; } body.print-mb #mb_sheet table { font-size: 10.5px; } body.print-mb #mb_sheet th, body.print-mb #mb_sheet td { padding: 3px 5px; white-space: normal; } body.print-mb .tw { overflow: visible; border: 0; } }
   /* INSIDE ANOTHER MODULE'S SCREEN (Mechanical shows this page in its middle part – its own menu, top bar and Logout are there) */
   html.embed, html.embed body { background: transparent; }
   html.embed .side, html.embed .topbar { display: none !important; }
@@ -343,6 +354,45 @@
         <section class="tiles" id="hd_tiles"></section>
         <section class="panel" style="padding:0"><div class="tw" style="border:0"><table><thead><tr><th>No</th><th>From – to</th><th class="n">Days</th><th>Stretch</th><th>Side</th><th>Works stopped</th><th>What</th><th>Letter</th><th>Added by</th><th class="noprint"></th></tr></thead><tbody id="hd_rows"></tbody></table></div></section>
         <section class="panel"><h2>Days of hindrance by work</h2><div class="tw" style="margin-top:8px"><table><thead><tr><th>Work</th><th class="n">Hindrances</th><th class="n">Days (in the period)</th><th class="n">Still on</th></tr></thead><tbody id="hd_works"></tbody></table></div></section>
+      </div>
+
+      <!-- (10-11-2026, Engineering 2B) MEASUREMENT BOOK: the quantity of a finished layer from the reports → measured → check-measured → the RA bill's abstract -->
+      <div id="pg_mb" hidden>
+        <div class="bigdate noprint">Measurement Book</div><div class="muted noprint">the quantity of a finished layer, worked out from the reports (chainage × width × thickness) → measured → check-measured → the abstract for the RA bill</div>
+        <div class="rulebar" id="mb_bar" hidden></div>
+        <div class="tabs noprint" id="mb_tabs" style="margin-top:10px"><button type="button" data-t="list" aria-selected="true">MB pages</button><button type="button" data-t="abs" aria-selected="false">Abstract for the RA bill</button></div>
+        <div id="mb_list">
+          <div class="bar noprint">
+            <div class="field"><label for="mb_from">From (MB date)</label><input type="date" id="mb_from"></div><div class="field"><label for="mb_to">To</label><input type="date" id="mb_to"></div>
+            <div class="field"><label for="mb_work">Work</label><select id="mb_work"></select></div>
+            <div class="field"><label for="mb_st">Status</label><select id="mb_st"><option value="">All</option><option value="Measured">Measured – to check</option><option value="Sent back">Sent back</option><option value="Check-measured">Check-measured</option></select></div>
+            <button type="button" class="btn" id="mb_go">Show</button><button type="button" class="btn" id="mb_print">Print</button><button type="button" class="btn primary" id="mb_new" style="margin-left:auto">+ New MB page</button>
+          </div>
+          <section class="panel" style="padding:0"><div class="tw" style="border:0"><table><thead><tr><th>MB page</th><th>Date</th><th>Work · layer</th><th class="n">Lines</th><th class="n">Quantity</th><th>Status</th><th>Measured by</th><th>Check-measured</th><th class="noprint"></th></tr></thead><tbody id="mb_rows"></tbody></table></div></section>
+        </div>
+        <div id="mb_abs" hidden>
+          <div class="bar noprint"><div class="field"><label for="ab_from">This period – from (MB date)</label><input type="date" id="ab_from"></div><div class="field"><label for="ab_to">To</label><input type="date" id="ab_to"></div>
+            <button type="button" class="btn" id="ab_go">Show</button><button type="button" class="btn" id="ab_print">Print</button></div>
+          <section class="panel"><h2 id="ab_h">Abstract – check-measured quantities</h2><p class="muted" id="ab_p" style="margin:2px 0 10px"></p>
+            <div class="tw"><table><thead><tr><th>Work · layer</th><th>Unit</th><th class="n">Up to the previous period</th><th class="n">This period</th><th class="n">Cumulative</th><th>MB pages of this period</th></tr></thead><tbody id="ab_rows"></tbody></table></div>
+            <p class="muted" id="ab_note" style="margin:10px 0 0"></p></section>
+        </div>
+        <section class="panel" id="mb_form" hidden><h2 id="mo_h">New MB page</h2>
+          <div class="grid" id="mo_pick">
+            <div class="field"><label for="mo_work">Work</label><select id="mo_work"></select></div>
+            <div class="field" id="mo_layer_w"><label for="mo_layer">Layer</label><select id="mo_layer"></select></div>
+            <div class="field"><label for="mo_side">Side</label><select id="mo_side"></select></div>
+            <div class="field"><label for="mo_from">Reports from</label><input type="date" id="mo_from"></div>
+            <div class="field"><label for="mo_to">Reports to</label><input type="date" id="mo_to"></div>
+            <div class="field" style="justify-content:flex-end"><button type="button" class="btn" id="mo_find">Find the work not measured</button></div>
+          </div>
+          <div id="mo_info"></div>
+          <div class="tw" id="mo_tw" hidden><table class="mbt"><thead><tr><th><input type="checkbox" id="mo_all" aria-label="Tick every line"></th><th>Report</th><th>Side</th><th>Chainage</th><th class="n">Length m</th><th>Width m</th><th>Thickness mm</th><th class="n">Quantity</th><th>IE's RFI</th><th>Remark</th></tr></thead><tbody id="mo_rows"></tbody></table></div>
+          <div id="mo_more"></div>
+          <div class="grid" style="margin-top:12px"><div class="field"><label for="mo_day">Date of the MB page (measured on)</label><input type="date" id="mo_day"></div><div class="field wide"><label for="mo_note">Note</label><input id="mo_note" maxlength="300"></div></div>
+          <div class="bar"><b id="mo_tot"></b><span style="flex:1"></span><button type="button" class="btn" id="mo_cancel">Cancel</button><button type="button" class="btn primary" id="mo_save">Save as Measured</button></div>
+        </section>
+        <section class="panel mbsheet" id="mb_sheet" hidden></section>
       </div>
 
       <!-- SET-UP: the Super Admin fills everything (period by period, Active / Inactive) -->
@@ -532,8 +582,8 @@
 
   /* ---------------- SIGN-IN THROUGH THE PORTAL (as the Store) ---------------- */
   let PORTAL = '';
-  const PAGES = { mywork: 'My work', dashboard: 'Dashboard', strip: 'Strip chart', rfi: 'RFI', hind: 'Hindrances', allreports: 'All reports', reports: 'Reports', perf: 'Performance', setup: 'Set-up (Super Admin)' };
-  const WHO = { mywork: 'all', dashboard: 'view', strip: 'all', rfi: 'all', hind: 'all', allreports: 'view', reports: 'view', perf: 'view', setup: 'super' };
+  const PAGES = { mywork: 'My work', dashboard: 'Dashboard', strip: 'Strip chart', rfi: 'RFI', hind: 'Hindrances', allreports: 'All reports', reports: 'Reports', perf: 'Performance', mb: 'Measurement Book', setup: 'Set-up (Super Admin)' };
+  const WHO = { mywork: 'all', dashboard: 'view', strip: 'all', rfi: 'all', hind: 'all', allreports: 'view', reports: 'view', perf: 'view', mb: 'view', setup: 'super' };
   const mayOpen = p => WHO[p] === 'all' || (WHO[p] === 'view' && canView()) || (WHO[p] === 'super' && isSuper());
   const IC = {
     mywork: '<path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/>',
@@ -544,6 +594,7 @@
     hind: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
     reports: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
     perf: '<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M17 11l2 2 4-4"/>',
+    mb: '<path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 21.5A2.5 2.5 0 0 1 6.5 19H20"/><path d="M9 7h7M9 11h5"/>',
     setup: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>' };
   const svgIc = k => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + IC[k] + '</svg>';
   const lastSite = () => { try { return localStorage.getItem('rcl_eng_site') || ''; } catch (e) { return ''; } };
@@ -1345,6 +1396,219 @@
   $('hd_print').addEventListener('click', () => window.print());
   $('hd_new').addEventListener('click', () => hindForm(null));
   $('hd_rows').addEventListener('click', e => { const b = e.target.closest('[data-hchg]'); if (b) hindForm(((S.hd && S.hd.rows) || []).find(h => h.no === b.dataset.hchg)); });
+
+  /* ================= (10-11-2026, Engineering 2B) THE MEASUREMENT BOOK =================
+   * His choice: "Measurement Book – पूर्ण झालेल्या layer चे काम आपोआप (chainage × रुंदी × जाडी) → MB (मोजले / तपासले) → RA bill साठी".
+   * The Admin / the Super Admin finds the stretches of a work and layer reported done and not measured yet (the server works out each
+   * quantity with the masters of the day it was done), corrects a width / thickness actually measured (with a remark) and saves the
+   * page as MEASURED; another Admin or the Super Admin – never the one who measured it – CHECK-MEASURES it (locked) or SENDS IT BACK.
+   * The abstract: the check-measured quantity of a period, up to the previous period and cumulative – for the RA bill. */
+  S.mb = { tab: 'list', list: null, offer: null, page: null, edit: null, typed: {}, abs: null };
+  const MB_CLS = { 'Measured': 'Pending', 'Sent back': 'Rejected', 'Check-measured': 'Approved' };      // (the colours of the RFI's statuses)
+  const MB_TXT = { 'Measured': 'Measured – to check', 'Sent back': 'Sent back', 'Check-measured': 'Check-measured' };
+  const f3 = n => n === null || n === undefined || !isFinite(n) ? '–' : Number(n).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  const qtyOf = t => (t || []).map(x => f3(x.qty) + ' ' + x.unit).join(' + ') || '–';
+  // the server's rule (lib/rules.js mbQty) – here only to show the figure while it is typed; the server works every line out again
+  function mbQty(unit, len, w, mm, rep) {
+    const r3 = n => Math.round(n * 1000) / 1000;
+    if (unit !== 'm' || len === null || len === undefined) return { qty: r3(Number(rep) || 0), unit: unit, how: 'reported' };
+    if (w > 0 && mm > 0) return { qty: r3(len * w * mm / 1000), unit: 'cum', how: 'LxWxT' };
+    if (w > 0) return { qty: r3(len * w), unit: 'sq m', how: 'LxW' };
+    return { qty: r3(len), unit: 'm', how: 'L' };
+  }
+  // how a line's quantity was worked out – every figure shown
+  function mbHow(l) {
+    if (l.how === 'reported') return 'the reported quantity';
+    const L = fmt(l.len, 3) + ' m';
+    if (l.how === 'LxWxT') return L + ' × ' + fmt(l.w, 3) + ' m × ' + fmt(l.mm / 1000, 3) + ' m (' + fmt(l.mm, 1) + ' mm)';
+    if (l.how === 'LxW') return L + ' × ' + fmt(l.w, 3) + ' m (the layer has no thickness)';
+    return L + ' (no width set)';
+  }
+  const mbFig = (v, m, dp) => v === null || v === undefined ? '<span class="muted">–</span>' : fmt(v, dp) + (m !== v ? '<small>masters: ' + (m === null || m === undefined ? 'not set' : fmt(m, dp)) + '</small>' : '');
+  const mbRfi = l => (l.rfi || []).length ? esc(l.rfi.join(', ')) : l.appr === 'no' ? '<b class="st-Rejected">Not approved by the IE</b>' : '<span class="muted">–</span>';
+  function mbShow(part) {
+    ['mb_list', 'mb_abs', 'mb_form', 'mb_sheet'].forEach(k => { $(k).hidden = k !== part; });
+    $('mb_tabs').hidden = part === 'mb_form' || part === 'mb_sheet';
+    if (part !== 'mb_sheet') document.body.classList.remove('print-mb');
+  }
+  function mbTab(t) { S.mb.tab = t; $('mb_tabs').querySelectorAll('[data-t]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.t === t))); mbShow(t === 'abs' ? 'mb_abs' : 'mb_list'); }
+  LOAD.mb = async () => { mbTab(S.mb.tab); return S.mb.tab === 'abs' ? mbAbs() : mbList(); };
+  const mbWorks = d => { const on = itemsOn('work', d, true); return Object.keys(on).map(k => on[k]).sort((a, b) => a.data.sort - b.data.sort || a.data.name.localeCompare(b.data.name)); };
+  function mbMissing(r) { $('mb_bar').hidden = !r.missing; $('mb_bar').textContent = r.missing || ''; $('mb_new').hidden = !!r.missing; }
+  // ---- the MB register ----
+  async function mbList() {
+    if (!$('mb_to').value) { $('mb_to').value = S.today; $('mb_from').value = addDays(S.today, -89); }
+    const keep = $('mb_work').value;
+    $('mb_work').innerHTML = '<option value="">Every work</option>' + mbWorks(S.today).map(w => '<option value="' + esc(w.item) + '"' + (w.item === keep ? ' selected' : '') + '>' + esc(w.data.name) + '</option>').join('');
+    $('mb_rows').innerHTML = '<tr><td colspan="9" class="empty">…</td></tr>';
+    const r = await eng({ action: 'mbList', from: $('mb_from').value, to: $('mb_to').value, work: $('mb_work').value, status: $('mb_st').value }); S.mb.list = r;
+    mbMissing(r);
+    $('mb_rows').innerHTML = r.rows.map(p => '<tr><td><b>' + esc(p.no) + '</b></td><td>' + esc(showDay(p.mb_day)) + ' ' + dt(p.mb_day).getUTCFullYear() + '</td><td class="wrap">' + esc(p.name) + '<small>reports of ' + esc(showDay(p.from_day)) + ' – ' + esc(showDay(p.to_day)) + '</small></td>' +
+      '<td class="n">' + p.lines + '</td><td class="n"><b>' + esc(qtyOf(p.totals)) + '</b></td><td><b class="st-' + MB_CLS[p.status] + '">' + esc(MB_TXT[p.status] || p.status) + '</b>' + (p.status === 'Sent back' && p.back_why ? '<small>' + esc(p.back_why) + '</small>' : '') + '</td>' +
+      '<td>' + esc(p.measured_name) + '<small>' + esc(when(p.measured_at)) + '</small></td><td>' + (p.chk_day ? esc(p.checked_name) + '<small>' + esc(showDay(p.chk_day)) + '</small>' : '<span class="muted">–</span>') + '</td>' +
+      '<td class="noprint"><button type="button" class="btn small" data-mbopen="' + esc(p.no) + '">Open</button></td></tr>').join('')
+      || '<tr><td colspan="9" class="empty">' + esc(r.missing || 'No MB page in this period.') + '</td></tr>';
+  }
+  // the lines of a page as they are
+  function mbTable(lines) {
+    return '<div class="tw"><table class="mbt"><thead><tr><th>#</th><th>Report of</th><th>Side</th><th>Chainage</th><th class="n">Length m</th><th class="n">Width m</th><th class="n">Thickness mm</th><th class="n">Quantity</th><th>Worked out</th><th>IE\'s RFI</th><th>Remark</th></tr></thead><tbody>' +
+      (lines || []).map(l => '<tr' + (l.appr === 'no' ? ' class="no"' : '') + '><td>' + l.ln + '</td><td>' + esc(showDay(l.day)) + '<small>' + esc(l.name) + (l.outside ? ' · outside the plan' : '') + '</small></td><td>' + esc(l.side || '–') + '</td>' +
+        '<td>' + (l.from !== null && l.from !== undefined ? esc(chTxt(l.from, l.to)) : '–') + '</td><td class="n">' + (l.len !== null && l.len !== undefined ? fmt(l.len, 3) : '–') + '</td><td class="n">' + (l.how === 'reported' ? '–' : mbFig(l.w, l.w_m, 3)) + '</td><td class="n">' + (l.how === 'reported' ? '–' : mbFig(l.mm, l.mm_m, 1)) + '</td>' +
+        '<td class="n"><b>' + f3(l.qty) + ' ' + esc(l.unit) + '</b></td><td class="wrap"><small>' + esc(mbHow(l)) + '</small></td><td>' + mbRfi(l) + '</td><td class="wrap">' + esc(l.remark || '') + (l.skip ? '<small>Measured without the IE\'s approval (Super Admin): ' + esc(l.skip) + '</small>' : '') + '</td></tr>').join('') + '</tbody></table></div>';
+  }
+  // ---- one MB page: as it is, its print, change, check-measured, sent back ----
+  async function mbOpen(no) {
+    const r = await eng({ action: 'mbGet', no: no }); S.mb.page = r;
+    const p = r.mb, me = S.me.user.email, locked = p.status === 'Check-measured';
+    const mayChange = !locked && (p.measured_by === me || isSuper()), mayCheck = p.status === 'Measured' && p.measured_by !== me;
+    let h = '<div class="bar noprint" style="margin-top:0"><button type="button" class="btn" id="ms_list">‹ MB pages</button><span style="flex:1"></span><button type="button" class="btn" id="ms_print">Print (A4)</button>' +
+      (mayChange ? '<button type="button" class="btn" id="ms_chg">' + (p.status === 'Sent back' ? 'Correct and measure again' : '✎ Change') + '</button>' : '') +
+      (mayCheck ? '<button type="button" class="btn bad" id="ms_sendback">Send back</button><button type="button" class="btn primary" id="ms_check">Check-measured</button>' : '') + '</div>';
+    if (p.status === 'Measured' && p.measured_by === me) h += '<p class="muted noprint" style="margin:0 0 8px">You measured it – another Admin or the Super Admin check-measures it (never one\'s own).</p>';
+    h += '<div class="sh-top"><div><div class="muted">' + esc(S.me.siteName || S.me.site) + ' · Engineering</div><h2 style="margin:2px 0 0">Measurement Book – ' + esc(p.no) + '</h2></div><div class="sh-st"><b class="st-' + MB_CLS[p.status] + '">' + esc(MB_TXT[p.status] || p.status) + (locked ? ' · locked' : '') + '</b></div></div>' +
+      '<div class="sh-meta"><span><small>Work · layer</small><b>' + esc(r.name) + '</b></span><span><small>Measured on</small><b>' + esc(longDay(p.mb_day)) + '</b></span><span><small>From the reports of</small><b>' + esc(showDay(p.from_day)) + ' – ' + esc(showDay(p.to_day)) + ' ' + dt(p.to_day).getUTCFullYear() + '</b></span><span><small>Quantity</small><b>' + esc(qtyOf(r.totals)) + '</b></span></div>';
+    if (p.status === 'Sent back') h += '<div class="errbox">Sent back by ' + esc(p.back_name) + ' (' + esc(when(p.back_at)) + '): ' + esc(p.back_why) + '</div>';
+    h += mbTable(p.lines) + (p.note ? '<p style="margin:10px 0 0"><b>Note:</b> ' + esc(p.note) + '</p>' : '');
+    h += '<div class="sh-sign"><div><small>Measured by</small><b>' + esc(p.measured_name) + '</b><span>' + esc(longDay(p.mb_day)) + ' · saved ' + esc(when(p.measured_at)) + '</span></div><div><small>Check-measured by</small><b>' + (p.chk_day ? esc(p.checked_name) : '–') + '</b><span>' + (p.chk_day ? esc(longDay(p.chk_day)) + (p.chk_remark ? ' · ' + esc(p.chk_remark) : '') : 'not yet') + '</span></div></div>';
+    h += '<h3>Every change (✎)</h3>' + (p.history || []).map((e, i) => '<div class="readline">✎ <b>' + esc(e.what) + '</b> · ' + esc(e.name || e.by) + ' · ' + esc(when(e.at)) + (e.why ? ' – ' + esc(e.why) : '') + (e.day ? ' · ' + esc(showDay(e.day)) : '') + (e.remark ? ' – ' + esc(e.remark) : '') +
+      (e.was ? ' <button type="button" class="link noprint" data-mbwas="' + i + '">the page before</button>' : '') + '</div>').join('');
+    $('mb_sheet').innerHTML = h; mbShow('mb_sheet');
+  }
+  function mbPrint() {
+    document.body.classList.add('print-mb');
+    const off = () => { document.body.classList.remove('print-mb'); window.removeEventListener('afterprint', off); };
+    window.addEventListener('afterprint', off); window.print();
+  }
+  function mbFail(e, no) { if (e && e.code === 'changed') { toast(e.message, true); if (no) mbOpen(no).catch(failed); return; } failed(e); }
+  async function mbCheck(p) {
+    const html = '<p><b>' + esc(p.no) + '</b> · ' + esc(S.mb.page.name) + ' · ' + esc(qtyOf(S.mb.page.totals)) + '</p><p class="muted">Measured by ' + esc(p.measured_name) + ' on ' + esc(longDay(p.mb_day)) + '. Once check-measured the page is locked – its quantity goes into the abstract for the RA bill.</p>' +
+      '<div class="grid"><div class="field"><label for="mc_day">Check-measured on</label><input type="date" id="mc_day" min="' + esc(p.mb_day) + '" max="' + S.today + '" value="' + S.today + '"></div><div class="field wide"><label for="mc_rem">Remark</label><input id="mc_rem" maxlength="300"></div></div>';
+    if (!(await ask('Check-measured – ' + p.no, html, [{ label: 'Cancel', value: false }, { label: 'Check-measured', value: true, primary: true }], true))) return;
+    const g = id => ($(id) || {}).value || '';
+    try { const r = await eng({ action: 'mbCheck', no: p.no, ver: p.ver, chk_day: g('mc_day'), remark: g('mc_rem') }); toast(r.mb.no + ': check-measured – locked.'); await mbOpen(p.no); } catch (e) { mbFail(e, p.no); }
+  }
+  async function mbBack(p) {
+    const html = '<p><b>' + esc(p.no) + '</b> · ' + esc(S.mb.page.name) + '</p><p class="muted">It goes back to ' + esc(p.measured_name) + ' to be corrected and measured again.</p><div class="field"><label for="mk_why">Why is it sent back? *</label><input id="mk_why" maxlength="300"></div>';
+    if (!(await ask('Send back – ' + p.no, html, [{ label: 'Cancel', value: false }, { label: 'Send back', value: true, bad: true }], true))) return;
+    try { const r = await eng({ action: 'mbBack', no: p.no, ver: p.ver, why: ($('mk_why') || {}).value || '' }); toast(r.mb.no + ': sent back.'); await mbOpen(p.no); } catch (e) { mbFail(e, p.no); }
+  }
+  $('mb_sheet').addEventListener('click', e => {
+    const t = e.target.closest('button'); if (!t || !S.mb.page) return; const p = S.mb.page.mb;
+    if (t.id === 'ms_list') { mbTab('list'); mbList().catch(failed); }
+    else if (t.id === 'ms_print') mbPrint();
+    else if (t.id === 'ms_chg') mbForm(S.mb.page).catch(failed);
+    else if (t.id === 'ms_check') mbCheck(p);
+    else if (t.id === 'ms_sendback') mbBack(p);
+    else if (t.dataset.mbwas !== undefined) { const x = (p.history || [])[Number(t.dataset.mbwas)]; if (x && x.was) ask(p.no + ' before: ' + x.what + ' ' + when(x.at), '<p class="muted">Measured on ' + esc(longDay(x.was.mb_day)) + (x.was.note ? ' · ' + esc(x.was.note) : '') + ' · ' + esc(qtyOf(mbTotalsOf(x.was.lines))) + '</p>' + mbTable(x.was.lines), [{ label: 'Close', value: null, primary: true }], true); }
+  });
+  const mbTotalsOf = lines => { const t = {}; (lines || []).forEach(l => { t[l.unit] = (t[l.unit] || 0) + Number(l.qty || 0); }); return Object.keys(t).map(u => ({ unit: u, qty: Math.round(t[u] * 1000) / 1000 })); };
+  // ---- a new MB page, or a change of one (its work, layer and days stay) ----
+  function mbLayers(keep) {
+    const w = workOn($('mo_work').value, $('mo_to').value || S.today), L = w ? w.data.layers : [];
+    $('mo_layer').innerHTML = L.map(l => '<option value="' + esc(l.key) + '"' + (l.key === keep ? ' selected' : '') + '>' + esc(l.name) + (l.mm ? ' (' + l.mm + ' mm)' : '') + '</option>').join('');
+    $('mo_layer_w').hidden = !L.length;
+  }
+  function mbClear(force) { if (S.mb.edit && !force) return; S.mb.offer = null; S.mb.typed = {}; $('mo_tw').hidden = true; $('mo_rows').innerHTML = ''; $('mo_more').innerHTML = ''; $('mo_info').innerHTML = '<p class="muted">Pick the work, its layer and the days of the reports, then "Find the work not measured".</p>'; mbRecalc(); }
+  async function mbForm(p) {
+    S.mb.edit = p ? { no: p.mb.no, ver: p.mb.ver } : null; S.mb.offer = null; S.mb.typed = {};
+    $('mo_h').textContent = p ? (p.mb.status === 'Sent back' ? 'Correct ' + p.mb.no + ' and measure it again' : 'Change ' + p.mb.no) + ' · ' + p.name : 'New MB page';
+    $('mo_work').innerHTML = mbWorks(S.today).map(w => '<option value="' + esc(w.item) + '">' + esc(w.data.name) + '</option>').join('');
+    if (p) { $('mo_work').value = p.mb.work; $('mo_from').value = p.mb.from_day; $('mo_to').value = p.mb.to_day; }
+    else if (!$('mo_to').value) { $('mo_to').value = S.today; $('mo_from').value = addDays(S.today, -30); }
+    $('mo_from').max = S.today; $('mo_to').max = S.today;
+    mbLayers(p ? p.mb.layer : null);
+    $('mo_side').innerHTML = '<option value="">Every side</option>' + sideNamesOn(S.today).map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('');
+    ['mo_work', 'mo_layer', 'mo_side', 'mo_from', 'mo_to'].forEach(k => { $(k).disabled = !!p; }); $('mo_find').hidden = !!p;
+    $('mo_day').value = p ? p.mb.mb_day : S.today; $('mo_day').max = S.today; $('mo_note').value = p ? p.mb.note : '';
+    mbShow('mb_form'); mbClear(true);
+    if (p) { $('mo_info').innerHTML = '<p class="muted">…</p>'; await mbFind(); }
+  }
+  async function mbFind() {
+    const e = S.mb.edit;
+    if (!e && (!$('mo_from').value || !$('mo_to').value || $('mo_from').value > $('mo_to').value)) { toast('Pick the days of the reports – "from" on or before "to".', true); return; }
+    const body = e ? { action: 'mbOffer', no: e.no } : { action: 'mbOffer', work: $('mo_work').value, layer: $('mo_layer_w').hidden ? '' : $('mo_layer').value, side: $('mo_side').value, from: $('mo_from').value, to: $('mo_to').value };
+    const r = await eng(body); S.mb.offer = r; if (e) e.ver = r.ver;
+    mbDraw();
+  }
+  function mbDraw() {
+    const r = S.mb.offer, sup = isSuper(), T = S.mb.typed;
+    const rule = r.rule && r.rule.on ? 'RFI rule ON from ' + longDay(r.rule.from) + ': a stretch done from then and not approved by the IE is not finished – it is not measured' + (sup ? ' (the Super Admin may, with a reason).' : '.') : '';
+    $('mo_info').innerHTML = '<p style="margin:8px 0"><b>' + esc(r.name) + '</b> · reports of ' + esc(showDay(r.from)) + ' – ' + esc(showDay(r.to)) + ' · <b>' + r.lines.length + '</b> line' + (r.lines.length === 1 ? '' : 's') + ' open to measure' +
+      (r.skipped.some(x => x.why === 'in the MB') ? ' · ' + r.skipped.filter(x => x.why === 'in the MB').length + ' already in the MB (never measured twice)' : '') +
+      (r.skipped.some(x => x.why === 'reported twice') ? ' · ' + r.skipped.filter(x => x.why === 'reported twice').length + ' reported twice (the earlier report is offered)' : '') + '</p>' + (rule ? '<div class="rulebar on">' + esc(rule) + '</div>' : '') + (r.lines.length ? '' : '<div class="empty">Nothing of this work and layer reported done in these days is left to measure.</div>');
+    $('mo_tw').hidden = !r.lines.length;
+    $('mo_rows').innerHTML = r.lines.map((l, i) => {
+      const t = T[l.key] || {}, no = l.appr === 'no', may = !no || sup, calc = l.how !== 'reported';
+      const on = may && (t.on !== undefined ? t.on : (S.mb.edit ? !!l.inPage : !no));
+      const wv = t.w !== undefined ? t.w : (l.inPage ? l.w : l.w_m), mv = t.mm !== undefined ? t.mm : (l.inPage ? l.mm : l.mm_m);
+      const box = (cls, v, m, lbl) => '<input class="' + cls + '" type="number" min="0" step="any" aria-label="' + lbl + '" value="' + esc(v === null || v === undefined ? '' : v) + '"' + (m === null ? ' placeholder="not set"' : '') + '><small>masters: ' + (m === null ? 'not set' : fmt(m, 3)) + '</small>';
+      return '<tr data-i="' + i + '"' + (no ? ' class="no"' : '') + '><td><input type="checkbox" class="mo-on"' + (on ? ' checked' : '') + (may ? '' : ' disabled') + ' aria-label="Measure this line"></td>' +
+        '<td>' + esc(showDay(l.day)) + '<small>' + esc(l.name) + (l.outside ? ' · outside the plan' : '') + (l.inPage ? ' · in this page' : '') + '</small></td><td>' + esc(l.side || '–') + '</td><td>' + (l.from !== null ? esc(chTxt(l.from, l.to)) : '–') + '</td><td class="n">' + (l.len !== null ? fmt(l.len, 3) : '–') + '</td>' +
+        '<td>' + (calc ? box('mo-w', wv, l.w_m, 'Width measured (m)') : '<span class="muted">–</span>') + '</td><td>' + (calc ? box('mo-mm', mv, l.mm_m, 'Thickness measured (mm)') : '<span class="muted">–</span>') + '</td>' +
+        '<td class="n"><b class="mo-q"></b><small class="mo-how"></small></td><td>' + mbRfi(l) + (no && sup ? '<input class="mo-skip" maxlength="200" aria-label="Why it is measured without the IE\'s approval" placeholder="Why measured anyway? *" value="' + esc(t.skip !== undefined ? t.skip : (l.skip || '')) + '">' : '') + (no && !sup ? '<small>not finished – not measured</small>' : '') + '</td>' +
+        '<td><input class="mo-rem" maxlength="200" aria-label="Remark" placeholder="when it differs from the masters" value="' + esc(t.remark !== undefined ? t.remark : (l.remark || '')) + '"></td></tr>';
+    }).join('');
+    $('mo_more').innerHTML = (r.gone || []).length ? '<div class="errbox">' + r.gone.length + ' line(s) of this page are not in the reports any more (a report or the masters changed) – they are taken out when it is saved: ' + r.gone.map(l => esc((l.side || '–') + ' ' + chTxt(l.from, l.to))).join(', ') + '</div>' : '';
+    mbRecalc();
+  }
+  // what was typed is kept by line (the list may be loaded again)
+  function mbKeep() {
+    const r = S.mb.offer; if (!r) return;
+    $('mo_rows').querySelectorAll('tr[data-i]').forEach(tr => { const l = r.lines[Number(tr.dataset.i)], q = c => { const x = tr.querySelector(c); return x ? x.value : undefined; };
+      S.mb.typed[l.key] = { on: tr.querySelector('.mo-on').checked, w: q('.mo-w'), mm: q('.mo-mm'), remark: q('.mo-rem'), skip: q('.mo-skip') }; });
+  }
+  function mbRecalc() {
+    const r = S.mb.offer, tot = {}; let n = 0, all = 0;
+    if (r) $('mo_rows').querySelectorAll('tr[data-i]').forEach(tr => {
+      const l = r.lines[Number(tr.dataset.i)], val = (c, m) => { const x = tr.querySelector(c); if (!x || x.value === '') return m; const v = Number(x.value); return isFinite(v) && v > 0 ? v : m; };
+      const x = l.how === 'reported' ? l : Object.assign(mbQty('m', l.len, val('.mo-w', l.w_m), val('.mo-mm', l.mm_m)), { len: l.len, w: val('.mo-w', l.w_m), mm: val('.mo-mm', l.mm_m) });
+      tr.querySelector('.mo-q').textContent = f3(x.qty) + ' ' + x.unit; tr.querySelector('.mo-how').textContent = mbHow(x);
+      const c = tr.querySelector('.mo-on'), on = c.checked; tr.classList.toggle('unt', !on); if (!c.disabled) all++;
+      if (on) { n++; tot[x.unit] = (tot[x.unit] || 0) + x.qty; }
+    });
+    $('mo_tot').textContent = n ? n + ' line' + (n === 1 ? '' : 's') + ' ticked · ' + Object.keys(tot).map(u => f3(tot[u]) + ' ' + u).join(' + ') : (r ? 'Nothing ticked' : '');
+    $('mo_save').disabled = !n; $('mo_all').checked = n > 0 && n === all;
+  }
+  $('mo_rows').addEventListener('input', () => { mbKeep(); mbRecalc(); });
+  $('mo_rows').addEventListener('change', () => { mbKeep(); mbRecalc(); });
+  $('mo_all').addEventListener('change', () => { $('mo_rows').querySelectorAll('.mo-on:not(:disabled)').forEach(c => { c.checked = $('mo_all').checked; }); mbKeep(); mbRecalc(); });
+  $('mo_work').addEventListener('change', () => { mbLayers(null); mbClear(); });
+  ['mo_layer', 'mo_side', 'mo_from', 'mo_to'].forEach(k => $(k).addEventListener('change', () => { if (k === 'mo_to') mbLayers($('mo_layer').value); mbClear(); }));
+  $('mo_find').addEventListener('click', () => mbFind().catch(failed));
+  $('mo_cancel').addEventListener('click', () => { if (S.mb.edit) mbOpen(S.mb.edit.no).catch(failed); else { mbTab('list'); mbList().catch(failed); } });
+  $('mo_save').addEventListener('click', async e => {
+    const b = e.target, r = S.mb.offer; if (b.disabled || !r) return;
+    mbKeep();
+    const lines = [];
+    $('mo_rows').querySelectorAll('tr[data-i]').forEach(tr => { if (!tr.querySelector('.mo-on').checked) return; const l = r.lines[Number(tr.dataset.i)], q = c => { const x = tr.querySelector(c); return x ? x.value : ''; };
+      lines.push({ key: l.key, w: q('.mo-w'), mm: q('.mo-mm'), remark: q('.mo-rem'), skip: q('.mo-skip') }); });
+    b.disabled = true;
+    try {
+      const x = S.mb.edit ? { action: 'mbSave', no: S.mb.edit.no, ver: S.mb.edit.ver } : { action: 'mbSave', work: r.work, layer: r.layer, from: r.from, to: r.to };
+      const res = await eng(Object.assign(x, { mb_day: $('mo_day').value, note: $('mo_note').value, lines: lines }));
+      toast('Measured: ' + res.mb.no + ' – another Admin or the Super Admin check-measures it.'); S.mb.typed = {}; S.mb.edit = null; await mbOpen(res.mb.no);
+    } catch (er) { if (er && er.code === 'changed') { toast(er.message, true); await mbFind().catch(failed); } else failed(er); }
+    finally { b.disabled = false; if (!$('mb_form').hidden) mbRecalc(); }
+  });
+  // ---- the abstract for the RA bill ----
+  async function mbAbs() {
+    if (!$('ab_to').value) { $('ab_to').value = S.today; $('ab_from').value = S.today.slice(0, 8) + '01'; }
+    $('ab_rows').innerHTML = '<tr><td colspan="6" class="empty">…</td></tr>';
+    const r = await eng({ action: 'mbAbstract', from: $('ab_from').value, to: $('ab_to').value }); S.mb.abs = r;
+    mbMissing(r);
+    $('ab_h').textContent = 'Abstract – check-measured quantities · ' + (S.me.siteName || S.me.site);
+    $('ab_p').textContent = 'This period: ' + longDay(r.from) + ' to ' + longDay(r.to) + ' (by the date of the MB page) · only check-measured MB pages count';
+    $('ab_rows').innerHTML = r.rows.map(g => '<tr><td class="nm" style="border-left:5px solid ' + workColour(g.work) + '">' + esc(g.name) + (g.layerName ? ' · ' + esc(g.layerName) : '') + '</td><td>' + esc(g.unit) + '</td><td class="n">' + f3(g.prev) + '</td><td class="n"><b>' + f3(g.now) + '</b></td><td class="n"><b>' + f3(g.cum) + '</b></td><td class="wrap">' + esc(g.pages.join(', ') || '–') + '</td></tr>').join('')
+      || '<tr><td colspan="6" class="empty">' + esc(r.missing || 'Nothing check-measured up to this day.') + '</td></tr>';
+    $('ab_note').textContent = ((r.waiting || []).length ? r.waiting.length + ' MB page' + (r.waiting.length === 1 ? '' : 's') + ' of this period not check-measured yet – not counted: ' + r.waiting.map(w => w.no + ' (' + (MB_TXT[w.status] || w.status) + ')').join(', ') + '. ' : '') + 'The RA bill itself (the BOQ rates and amounts) is not made here.';
+  }
+  $('mb_tabs').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; mbTab(b.dataset.t); (b.dataset.t === 'abs' ? mbAbs() : mbList()).catch(failed); });
+  $('mb_go').addEventListener('click', () => { if ($('mb_from').value > $('mb_to').value) { toast('"From" must be before "to".', true); return; } mbList().catch(failed); });
+  $('ab_go').addEventListener('click', () => { if ($('ab_from').value > $('ab_to').value) { toast('"From" must be before "to".', true); return; } mbAbs().catch(failed); });
+  $('mb_print').addEventListener('click', () => { document.body.classList.remove('print-mb'); window.print(); });
+  $('ab_print').addEventListener('click', () => { document.body.classList.remove('print-mb'); window.print(); });
+  $('mb_new').addEventListener('click', () => mbForm(null).catch(failed));
+  $('mb_rows').addEventListener('click', e => { const b = e.target.closest('[data-mbopen]'); if (b) mbOpen(b.dataset.mbopen).catch(failed); });
 
   /* ---- Set-up → RFI rule (the Super Admin) ---- */
   function drawRule() {

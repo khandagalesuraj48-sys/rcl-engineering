@@ -123,7 +123,7 @@ test('the page: its script parses; its pages are the menu\'s pages', () => {
   keys.forEach(k => assert.ok(html.indexOf('id="pg_' + k + '"') > -1, 'a section for ' + k));
   const m = require('../api/menu.js');
   assert.deepStrictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'user')).map(p => p.key), ['mywork', 'strip', 'rfi', 'hind']);      // (09-11-2026: RFI, Hindrances)
-  assert.strictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'admin')).length, 8); assert.strictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'super')).length, 9);
+  assert.strictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'admin')).length, 9); assert.strictEqual(m.PAGES.filter(p => m.mayOpen(p.who, 'super')).length, 10);      // (10-11-2026: the Measurement Book – the Admin and the Super Admin)
 });
 test('every action of the API is checked: the views need Admin, the set-up the Super Admin', () => {
   const src = fs.readFileSync(path.join(ROOT, 'api/eng.js'), 'utf8');
@@ -443,4 +443,148 @@ test('(09-11-2026) RFI and hindrances in the API: who may do what; every save no
   assert.ok(!/\b(drop table|delete from|truncate|alter table [^;]* drop)\b/i.test(sql.replace(/^--.*$/gm, '')), 'step 3 only adds');
   ['eng_settings', 'eng_numbers', 'eng_rfi', 'eng_hindrance'].forEach(t => assert.ok(sql.includes('create table if not exists public.' + t + ' ('), t));
   assert.match(sql, /revoke all on function public\.eng_next_no\(text, text\) from public, anon, authenticated;/);
+});
+
+// (10-11-2026, Engineering 2B) THE MEASUREMENT BOOK – the quantity rules on their own
+const SD = (item, data, from, to, active) => ({ kind: 'side', item: item, data: R.cleanData('side', data, null), valid_from: from || '2026-01-01', valid_to: to || null, active: active !== false });
+test('(10-11-2026) MB: the quantity of each unit – metres: length × width × thickness (cum), no thickness: × width (sq m), no width: the length; sq m / cum / Nos: the reported quantity', () => {
+  assert.deepStrictEqual(R.mbQty('m', 400, 7.5, 250, 400), { qty: 750, unit: 'cum', how: 'LxWxT' });            // 400 × 7.5 × 0.250
+  assert.deepStrictEqual(R.mbQty('m', 123.4, 7.25, 200, 0), { qty: 178.93, unit: 'cum', how: 'LxWxT' });       // 123.4 × 7.25 × 0.2 = 178.93
+  assert.deepStrictEqual(R.mbQty('m', 100, 2, null, 100), { qty: 200, unit: 'sq m', how: 'LxW' });
+  assert.deepStrictEqual(R.mbQty('m', 100, null, 250, 100), { qty: 100, unit: 'm', how: 'L' });
+  assert.deepStrictEqual(R.mbQty('sq m', 100, 7.5, null, 812.5), { qty: 812.5, unit: 'sq m', how: 'reported' });
+  assert.deepStrictEqual(R.mbQty('cum', null, null, null, 44.256), { qty: 44.256, unit: 'cum', how: 'reported' });
+  assert.deepStrictEqual(R.mbQty('Nos', null, null, null, 2), { qty: 2, unit: 'Nos', how: 'reported' });
+  assert.deepStrictEqual(R.mbTotals([{ unit: 'Nos', qty: 2 }, { unit: 'cum', qty: 0.1 }, { unit: 'cum', qty: 0.2 }, { unit: 'm', qty: 5 }]), [{ unit: 'cum', qty: 0.3 }, { unit: 'm', qty: 5 }, { unit: 'Nos', qty: 2 }]);
+});
+test('(10-11-2026) MB: the width of a side along a stretch, as on the day (its version) – a change of width, a gap with no width', () => {
+  const ms = [SD('S-001', { name: 'LHS', from: 8000, to: 20000, width: 7.5 }, '2026-01-01', '2026-10-31'), SD('S-001', { name: 'LHS', from: 8000, to: 20000, width: 8 }, '2026-11-01'),
+    SD('S-002', { name: 'LHS', from: 20500, to: 30000, width: 7 }), SD('S-003', { name: 'RHS', from: 8000, to: 30000, width: 7.5 }), SD('S-004', { name: 'LHS', from: 30000, to: 40000, width: 9 }, '2026-01-01', null, false)];
+  assert.deepStrictEqual(R.widthPieces(ms, 'LHS', '2026-10-31', 19800, 21000), [{ from: 19800, to: 20000, width: 7.5 }, { from: 20000, to: 20500, width: null }, { from: 20500, to: 21000, width: 7 }]);
+  assert.deepStrictEqual(R.widthPieces(ms, 'LHS', '2026-11-01', 19800, 20000), [{ from: 19800, to: 20000, width: 8 }], 'the new period from 1 Nov');
+  assert.deepStrictEqual(R.widthPieces(ms, 'RHS', '2026-11-01', 19800, 21000), [{ from: 19800, to: 21000, width: 7.5 }], 'each side its own width');
+  assert.deepStrictEqual(R.widthPieces(ms, 'LHS', '2026-11-01', 31000, 31100), [{ from: 31000, to: 31100, width: null }], 'an inactive stretch gives no width');
+  assert.deepStrictEqual(R.widthPieces(ms, 'Median', '2026-11-01', 10000, 10100), [{ from: 10000, to: 10100, width: null }]);
+});
+const mbMasters = () => [W('W-002', { name: 'Subgrade', sort: 30, layers: [{ name: 'Layer 1', mm: 250 }, { name: 'Top', mm: 250 }] }, '2026-01-01', '2026-10-31'),
+  W('W-002', { name: 'Subgrade', sort: 30, layers: [{ key: 'L1', name: 'Layer 1', mm: 300 }, { key: 'L2', name: 'Top', mm: 250 }] }, '2026-11-01'), W('W-004', { name: 'Culvert', unit: 'Nos', strip: false }), W('W-006', { name: 'Prime coat', unit: 'sq m', strip: false }),
+  W('W-007', { name: 'Kerb', sides: ['Median'], layers: [{ name: 'Kerb' }] }),
+  SD('S-001', { name: 'LHS', from: 8000, to: 61055, width: 7.5 }, '2026-01-01', '2026-10-31'), SD('S-001', { name: 'LHS', from: 8000, to: 61055, width: 8 }, '2026-11-01'), SD('S-002', { name: 'Median', from: 8000, to: 61055, width: 2 }), SD('S-003', { name: 'RHS', from: 8000, to: 61055, width: 7.5 })];
+const mbDoc = (day, extra, email, plan, lines) => ({ day: day, email: email || 'a@x', name: 'A', plan: plan || [], report: { lines: lines || [], extra: extra.map((x, i) => Object.assign({ id: 'x' + (i + 1), layer: '', side: '', from: null, to: null }, x, { qty: x.qty !== undefined ? x.qty : Math.abs(x.to - x.from) })), note: '' } });
+const mbOf = (docs, x) => R.mbOffer(Object.assign({ docs: docs, masters: mbMasters(), work: 'W-002', layer: 'L1', sides: null, claimed: [], rfis: [], rule: null }, x || {}));
+const lineOf = l => [l.day, l.side, l.from, l.to, l.w_m, l.mm_m, l.qty, l.unit].join(' ');
+test('(10-11-2026) MB: the lines offered – "Both" on LHS and RHS with each side\'s width, the version of the day, reported twice, already in the MB, one side asked', () => {
+  const docs = [mbDoc('2026-10-30', [{ work: 'W-002', layer: 'L1', side: 'Both', from: 30000, to: 30400 }]), mbDoc('2026-11-02', [{ work: 'W-002', layer: 'L1', side: 'LHS', from: 30300, to: 30700 }, { work: 'W-002', layer: 'L2', side: 'LHS', from: 30000, to: 30100 }])];
+  let o = mbOf(docs);
+  // 30 Oct: 400 × 7.5 × 0.25 = 750 on each side; 2 Nov (LHS 8 m, 300 mm): 30+400–30+700 only = 300 × 8 × 0.3 = 720
+  assert.deepStrictEqual(o.lines.map(lineOf), ['2026-10-30 LHS 30000 30400 7.5 250 750 cum', '2026-10-30 RHS 30000 30400 7.5 250 750 cum', '2026-11-02 LHS 30400 30700 8 300 720 cum']);
+  assert.deepStrictEqual(o.skipped.map(x => x.why + ' ' + x.len), ['reported twice 100']);
+  assert.deepStrictEqual(o.lines.map(l => l.key), ['2026-10-30|a@x|x1|LHS|30000|30400', '2026-10-30|a@x|x1|RHS|30000|30400', '2026-11-02|a@x|x1|LHS|30400|30700']);
+  // the other pages hold 30+000–30+200 on LHS: only the rest is offered (never measured twice)
+  o = mbOf(docs, { claimed: [{ side: 'LHS', from: 30000, to: 30200, src: 'z' }] });
+  assert.deepStrictEqual(o.lines.map(lineOf), ['2026-10-30 LHS 30200 30400 7.5 250 375 cum', '2026-10-30 RHS 30000 30400 7.5 250 750 cum', '2026-11-02 LHS 30400 30700 8 300 720 cum']);
+  assert.deepStrictEqual(o.skipped.map(x => x.why + ' ' + x.len).sort(), ['in the MB 200', 'reported twice 100']);
+  // one side asked: the same lines (the same keys) of that side only
+  const all = mbOf(docs).lines, rhs = mbOf(docs, { sides: ['RHS'] }).lines, lhs = mbOf(docs, { sides: ['LHS'] }).lines;
+  assert.deepStrictEqual(rhs.map(l => l.key), all.filter(l => l.side === 'RHS').map(l => l.key)); assert.deepStrictEqual(lhs.map(l => l.key), all.filter(l => l.side === 'LHS').map(l => l.key));
+  // the layer asked only; a width change along the stretch splits the line; a plan line done (its own id) – a plan line not done is not offered
+  const plan = [{ id: 'p1', work: 'W-002', layer: 'L1', side: 'RHS', from: 40000, to: 40500, qty: 500 }, { id: 'p2', work: 'W-002', layer: 'L1', side: 'RHS', from: 41000, to: 41100, qty: 100 }];
+  o = mbOf([mbDoc('2026-11-03', [], 'b@x', plan, [{ plan: 'p1', side: 'RHS', from: 40000, to: 40250, qty: 250, left: 250, reason: 'rain' }, { plan: 'p2', side: 'RHS', from: null, to: null, qty: 0, left: 100, reason: 'no' }])], { layer: 'L2' });
+  assert.strictEqual(o.lines.length, 0);
+  o = mbOf([mbDoc('2026-11-03', [], 'b@x', plan, [{ plan: 'p1', side: 'RHS', from: 40000, to: 40250, qty: 250, left: 250, reason: 'rain' }, { plan: 'p2', side: 'RHS', from: null, to: null, qty: 0, left: 100, reason: 'no' }])]);
+  assert.deepStrictEqual(o.lines.map(l => l.line + ' ' + l.outside + ' ' + lineOf(l)), ['p1 false 2026-11-03 RHS 40000 40250 7.5 300 562.5 cum']);
+  // the Median kerb: no thickness → length × width (sq m)
+  o = R.mbOffer({ docs: [mbDoc('2026-11-03', [{ work: 'W-007', layer: 'L1', side: 'Median', from: 10000, to: 10050 }])], masters: mbMasters(), work: 'W-007', layer: 'L1', sides: null, claimed: [], rfis: [], rule: null });
+  assert.deepStrictEqual(o.lines.map(lineOf), ['2026-11-03 Median 10000 10050 2  100 sq m']);
+});
+test('(10-11-2026) MB: a reported quantity (sq m, cum, Nos) – one line, never split; without chainage: once by its report line; with chainage: whole or not at all', () => {
+  const docs = [mbDoc('2026-11-02', [{ work: 'W-004', qty: 2 }, { work: 'W-004', qty: 1, side: 'LHS', from: 25300, to: 25312 }]), mbDoc('2026-11-03', [{ work: 'W-004', qty: 1, side: 'LHS', from: 25305, to: 25315 }])];
+  let o = R.mbOffer({ docs: docs, masters: mbMasters(), work: 'W-004', layer: '', sides: null, claimed: [], rfis: [], rule: null });
+  assert.deepStrictEqual(o.lines.map(l => [l.key, l.qty, l.unit, l.how, l.from, l.len].join(' ')), ['2026-11-02|a@x|x1| 2 Nos reported  ', '2026-11-02|a@x|x2|LHS 1 Nos reported 25300 12']);
+  assert.deepStrictEqual(o.skipped.map(x => x.why), ['reported twice']);
+  o = R.mbOffer({ docs: docs, masters: mbMasters(), work: 'W-004', layer: '', sides: null, claimed: [{ side: '', from: null, to: null, src: '2026-11-02|a@x|x1' }], rfis: [], rule: null });
+  assert.deepStrictEqual(o.lines.map(l => l.line), ['x2'], 'the line without chainage already in the MB (by its report line)');
+  // an area work on Both: one line (its reported quantity is of both sides); a later LHS line over it is not offered
+  const pc = [mbDoc('2026-11-02', [{ work: 'W-006', qty: 6000, side: 'Both', from: 10000, to: 10400 }]), mbDoc('2026-11-03', [{ work: 'W-006', qty: 900, side: 'LHS', from: 10300, to: 10420 }])];
+  o = R.mbOffer({ docs: pc, masters: mbMasters(), work: 'W-006', layer: '', sides: null, claimed: [], rfis: [], rule: null });
+  assert.deepStrictEqual(o.lines.map(l => [l.side, l.qty, l.unit].join(' ')), ['Both 6000 sq m']);
+  assert.deepStrictEqual(o.skipped.map(x => x.side + ' ' + x.why), ['LHS reported twice']);
+});
+test('(10-11-2026) MB and E1: the RFI rule on – a stretch done from its day without an approved RFI of the same layer is "not approved"; before its day not asked; the RFI no. on the line', () => {
+  const docs = [mbDoc('2026-11-03', [{ work: 'W-002', layer: 'L1', side: 'Both', from: 32000, to: 32250 }]), mbDoc('2026-10-20', [{ work: 'W-002', layer: 'L1', side: 'LHS', from: 33000, to: 33100 }])];
+  const rfis = [{ no: 'RFI-0007', status: 'Approved', work: 'W-002', layer: 'L1', side: 'Both', ch_from: 32000, ch_to: 32100 }, { no: 'RFI-0008', status: 'Approved', work: 'W-002', layer: 'L2', side: 'LHS', ch_from: 32000, ch_to: 32250 },
+    { no: 'RFI-0009', status: 'Approved', work: 'W-002', layer: 'L1', side: 'RHS', ch_from: 32100, ch_to: 32249.8 }, { no: 'RFI-0010', status: 'Pending', work: 'W-002', layer: 'L1', side: 'LHS', ch_from: 32100, ch_to: 32250 }];
+  const o = mbOf(docs, { rfis: rfis, rule: { on: true, from: '2026-11-01' } });
+  assert.deepStrictEqual(o.lines.map(l => [l.day, l.side, l.from, l.to, l.appr, l.rfi.join('+')].join(' ')), ['2026-10-20 LHS 33000 33100 off ', '2026-11-03 LHS 32000 32100 yes RFI-0007', '2026-11-03 LHS 32100 32250 no ', '2026-11-03 RHS 32000 32250 yes RFI-0007+RFI-0009'],
+    'before the rule\'s day: not asked; LHS: approved only to 32+100 (RFI-0008 is another layer, RFI-0010 waits); RHS: covered but for 0.2 m – approved');
+  const off = mbOf(docs, { rfis: rfis, rule: { on: false, from: '2026-11-01' } });
+  assert.ok(off.lines.every(l => l.appr === 'off') && off.lines.find(l => l.side === 'LHS' && l.from === 32000).rfi.join() === 'RFI-0007', 'the rule off: nothing asked, the RFI still shown');
+  // an area work on Both: approved only when both sides are covered
+  const pc = [mbDoc('2026-11-03', [{ work: 'W-006', qty: 3000, side: 'Both', from: 10000, to: 10200 }])], rf = side => [{ no: 'RFI-0011', status: 'Approved', work: 'W-006', layer: '', side: side, ch_from: 10000, ch_to: 10200 }];
+  assert.strictEqual(R.mbOffer({ docs: pc, masters: mbMasters(), work: 'W-006', layer: '', claimed: [], rfis: rf('LHS'), rule: { on: true, from: '2026-11-01' } }).lines[0].appr, 'no');
+  assert.strictEqual(R.mbOffer({ docs: pc, masters: mbMasters(), work: 'W-006', layer: '', claimed: [], rfis: rf('Both'), rule: { on: true, from: '2026-11-01' } }).lines[0].appr, 'yes');
+});
+test('(10-11-2026) MB: a line measured – the width / thickness measured needs a remark when it differs from the masters; not approved: only the Super Admin, with a reason', () => {
+  const [l1] = mbOf([mbDoc('2026-10-30', [{ work: 'W-002', layer: 'L1', side: 'LHS', from: 30000, to: 30400 }])]).lines;
+  assert.deepStrictEqual(R.mbLine(l1, {}, false, 1).qty, 750);
+  assert.deepStrictEqual(R.mbLine(l1, { w: '7.5', mm: 250 }, false, 1).qty, 750, 'the masters\' figures typed again: no remark needed');
+  assert.throws(() => R.mbLine(l1, { w: '7.4' }, false, 1), /^Error: Line 1 \(LHS 30\+000–30\+400\): the width differs from the masters \(7\.5 m\) – write a remark/);
+  assert.throws(() => R.mbLine(l1, { mm: '240' }, false, 3), /Line 3 .*: the thickness differs from the masters \(250 mm\)/);
+  const x = R.mbLine(l1, { w: '7.4', mm: '240', remark: 'as measured' }, false, 2);
+  assert.deepStrictEqual([x.ln, x.w, x.mm, x.w_m, x.mm_m, x.qty, x.unit, x.how, x.remark], [2, 7.4, 240, 7.5, 250, 710.4, 'cum', 'LxWxT', 'as measured']);      // 400 × 7.4 × 0.24
+  assert.throws(() => R.mbLine(l1, { w: '-1', remark: 'x x' }, false, 1), /the width is in metres/); assert.throws(() => R.mbLine(l1, { mm: '9000', remark: 'x x' }, false, 1), /the thickness is in mm/);
+  const nw = Object.assign({}, l1, { w_m: null, qty: 400, unit: 'm', how: 'L' });
+  assert.throws(() => R.mbLine(nw, { w: 7 }, false, 1), /differs from the masters \(not set\)/);
+  assert.deepStrictEqual(R.mbLine(nw, { w: 7, remark: 'taped 7 m' }, false, 1).qty, 700, 'no width in the masters: the measured one (400 × 7 × 0.25)');
+  const nos = { key: 'k', how: 'reported', qty: 2, unit: 'Nos', w_m: null, mm_m: null, len: null, from: null, side: '', appr: 'off' };
+  assert.deepStrictEqual([R.mbLine(nos, { w: 5, mm: 5 }, false, 1).qty, R.mbLine(nos, { w: 5 }, false, 1).w], [2, null], 'a reported quantity: width / thickness do not apply');
+  const no = Object.assign({}, l1, { appr: 'no' });
+  assert.throws(() => R.mbLine(no, { skip: 'IE saw it' }, false, 1), /not approved by the IE – the layer is not finished \(E1\), so it is not measured/);
+  assert.throws(() => R.mbLine(no, { skip: 'ok' }, true, 1), /write why it is measured anyway/);
+  assert.strictEqual(R.mbLine(no, { skip: 'IE inspected, letter awaited' }, true, 1).skip, 'IE inspected, letter awaited');
+});
+test('(10-11-2026) MB: the abstract – check-measured only, by the MB date: up to the previous period, this period, cumulative', () => {
+  const pg = (no, day, status, lines, work, layer) => ({ no: no, mb_day: day, status: status, work: work || 'W-002', layer: layer === undefined ? 'L1' : layer, lines: lines });
+  const a = R.mbAbstract([pg('MB-0001', '2026-10-25', 'Check-measured', [{ unit: 'cum', qty: 740 }, { unit: 'cum', qty: 750.25 }]), pg('MB-0002', '2026-11-03', 'Check-measured', [{ unit: 'cum', qty: 225 }]), pg('MB-0003', '2026-11-04', 'Measured', [{ unit: 'cum', qty: 100 }]),
+    pg('MB-0004', '2026-11-05', 'Sent back', [{ unit: 'cum', qty: 50 }]), pg('MB-0005', '2026-11-20', 'Check-measured', [{ unit: 'cum', qty: 999 }]), pg('MB-0006', '2026-10-02', 'Check-measured', [{ unit: 'Nos', qty: 2 }], 'W-004', ''), pg('MB-0007', '2026-11-02', 'Check-measured', [{ unit: 'sq m', qty: 10.5 }])], '2026-11-01', '2026-11-10');
+  assert.deepStrictEqual(a.map(g => [g.work, g.layer, g.unit, g.prev, g.now, g.cum, g.pages.join('+')].join(' ')), ['W-002 L1 cum 1490.25 225 1715.25 MB-0002', 'W-004  Nos 2 0 2 ', 'W-002 L1 sq m 0 10.5 10.5 MB-0007']);
+});
+test('(10-11-2026) MB in the API: every action is the Admin\'s / the Super Admin\'s (checked first); never one\'s own check; every save noted; step 4 only adds, guarded, named before step 3', () => {
+  const src = fs.readFileSync(path.join(ROOT, 'api/eng.js'), 'utf8');
+  ['mbOffer', 'mbSave', 'mbCheck', 'mbBack', 'mbList', 'mbGet', 'mbAbstract'].forEach(a => assert.ok(new RegExp('A\\.' + a + ' = async \\(s, x, C\\) => \\{\n  needView\\(s\\);').test(src), a + ' starts with needView'));
+  assert.ok(/const WRITES = new Set\(\[[^\]]*'mbSave', 'mbCheck', 'mbBack'\]\)/.test(src), 'the MB saves are writes (a fresh read; the activity record is checked by the LIVE test above)');
+  assert.ok(src.includes("if (old.measured_by === s.email) throw fail(403, 'You measured ' + old.no"), 'never one\'s own check / send back');
+  assert.ok(src.includes("if (old.measured_by !== s.email && !isSuper(s)) throw fail(403, 'Only the one who measured '"), 'a change: the one who measured it, or the Super Admin');
+  assert.ok(src.includes("return R.mbLine(by[k], w, isSuper(s), i + 1);"), 'every line is worked out again on the server from the reports (never the page\'s figures)');
+  assert.ok(src.includes("db('POST', 'rpc/eng_mb_put'"), 'saved through the one-step function (never twice, also at the same moment)');
+  const db = fs.readFileSync(path.join(ROOT, 'lib/db.js'), 'utf8');
+  assert.ok(db.indexOf('notinstalled4') > 0 && db.indexOf('notinstalled4') < db.indexOf('notinstalled3'), 'step 4 is named before step 3 (a missing function\'s hint names eng_next_no)');
+  assert.match(db, /sql\/eng_step4_mb\.sql/);
+  const q = fs.readFileSync(path.join(ROOT, 'sql/eng_step4_mb.sql'), 'utf8'), code = q.replace(/^--.*$/gm, '');
+  assert.ok(!/\b(drop table|drop function|delete from|truncate|alter table [^;]* drop)\b/i.test(code), 'step 4 only adds');
+  assert.ok(code.includes('create table if not exists public.eng_mb (') && code.includes('create or replace function public.eng_mb_put('), 'its table and its function, re-runnable');
+  assert.ok(/to_regprocedure\('public\.eng_next_no\(text, text\)'\) is null then\s+raise exception 'Run sql\/eng_step3_qc_hindrance\.sql first/.test(code), 'it needs step 3 first');
+  assert.ok(code.includes("pg_advisory_xact_lock(hashtext('eng_mb ' || p_site))") && code.includes("t.status <> 'Check-measured'"), 'one save of a site at a time; a check-measured page never changed');
+  assert.match(code, /revoke all on function public\.eng_mb_put\(text, text, integer, jsonb\) from public, anon, authenticated;/);
+  assert.match(code, /alter table public\.eng_mb enable row level security;\nrevoke all on public\.eng_mb from public, anon, authenticated;/);
+  assert.match(q.trim().split('\n').slice(-2).join('\n'), /^select 'Engineering step 4 done · /);
+  const page = fs.readFileSync(path.join(ROOT, 'public/index.html'), 'utf8');
+  assert.ok(page.includes('id="pg_mb"') && page.includes("const MB_TXT = ") && page.includes('<script src="voice.js"></script>'), 'the page has the MB and the voice script (every new box gets the 🎙 by itself)');
+  assert.ok(!/data-novoice/.test(page.slice(page.indexOf('id="pg_mb"'), page.indexOf('<!-- SET-UP'))), 'no MB box is kept from the 🎙');
+});
+test('(10-11-2026) MB: before step 4 the database\'s answer names step 4 – the table or the function missing (also when its hint names step 3\'s eng_next_no); step 3 and step 1 as before', async () => {
+  const { db } = require('../lib/db');
+  const env = { VERCEL_ENV: process.env.VERCEL_ENV, SUPABASE_URL: process.env.SUPABASE_URL, SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY }, f0 = global.fetch;
+  let body = '';
+  global.fetch = async () => new Response(body, { status: 404 });
+  const codeOf = async (t, m, p) => { body = t; try { await db(m || 'GET', p || 'eng_mb?select=no'); return 'none'; } catch (e) { return e.code; } };
+  try {
+    process.env.SUPABASE_URL = 'http://db.test'; process.env.SUPABASE_SECRET_KEY = 'k'; process.env.VERCEL_ENV = 'production';
+    // (the texts as the rig's PostgREST 12 gives them, and as a newer one names a table missing from its schema cache)
+    assert.strictEqual(await codeOf('{"code":"42P01","details":null,"hint":null,"message":"relation \\"public.eng_mb\\" does not exist"}'), 'notinstalled4');
+    assert.strictEqual(await codeOf('{"code":"PGRST205","details":null,"hint":"Perhaps you meant the table \'public.eng_days\'","message":"Could not find the table \'public.eng_mb\' in the schema cache"}'), 'notinstalled4');
+    assert.strictEqual(await codeOf('{"code":"PGRST202","details":"Searched for the function public.eng_mb_put with parameters p_no, p_row, p_site, p_ver or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.","hint":"Perhaps you meant to call the function public.eng_next_no","message":"Could not find the function public.eng_mb_put(p_no, p_row, p_site, p_ver) in the schema cache"}', 'POST', 'rpc/eng_mb_put'), 'notinstalled4');
+    assert.strictEqual(await codeOf('{"code":"42P01","details":null,"hint":null,"message":"relation \\"public.eng_rfi\\" does not exist"}', 'GET', 'eng_rfi?select=no'), 'notinstalled3');
+    assert.strictEqual(await codeOf('{"code":"42P01","details":null,"hint":null,"message":"relation \\"public.eng_days\\" does not exist"}', 'GET', 'eng_days?select=day'), 'notinstalled');
+  } finally { global.fetch = f0; Object.keys(env).forEach(k => { if (env[k] === undefined) delete process.env[k]; else process.env[k] = env[k]; }); }
 });
